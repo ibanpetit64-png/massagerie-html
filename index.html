@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Messagerie Authentifiée</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-size: 400% 400%;
+      animation: bg 12s ease infinite;
+    }
+    @keyframes bg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    .card {
+      width: 360px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: 0.3s;
+    }
+    .hidden { display: none; }
+    h1 { margin-bottom: 20px; }
+    input {
+      width: 100%;
+      padding: 10px 15px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      background: #4a6cf7;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.2s;
+    }
+    button:hover { background: #354ac0; }
+    .switch { margin-top: 10px; color: #555; cursor: pointer; }
+
+    /* App */
+    .app { display: none; width: 90vw; height: 90vh; border-radius: 20px; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.3); display: flex; }
+    .sidebar { width: 25%; background: #1a1a22; color: white; display: flex; flex-direction: column; padding: 20px; }
+    .chat { flex: 1; background: #0d0d0f; display: flex; flex-direction: column; }
+    #contacts { flex: 1; overflow-y: auto; }
+    .contact { padding: 10px; margin-bottom: 5px; background: #242434; border-radius: 10px; cursor: pointer; }
+    .contact:hover { background: #2e2e40; }
+    #messages { flex: 1; padding: 20px; overflow-y: auto; }
+    .bubble { max-width: 70%; margin: 8px 0; padding: 10px 15px; border-radius: 20px; }
+    .me { background: linear-gradient(135deg, #6a11cb, #2575fc); color: #fff; margin-left: auto; }
+    .them { background: #2a2a3d; color: #e0e0e0; margin-right: auto; }
+    #composer { display: flex; border-top: 1px solid #333; padding: 10px; }
+    #msgInput { flex: 1; background: #242434; border: none; color: #eee; border-radius: 10px; padding: 10px; }
+    #sendBtn { background: #6a11cb; border: none; color: white; border-radius: 10px; margin-left: 10px; padding: 10px 20px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <!-- 🔐 Auth -->
+  <div class="card" id="authCard">
+    <h1 id="authTitle">Connexion</h1>
+    <input id="username" placeholder="Nom d'utilisateur" />
+    <input id="password" placeholder="Mot de passe" type="password" />
+    <button id="authBtn">Se connecter</button>
+    <div class="switch" id="switchMode">Pas de compte ? Inscris-toi</div>
+  </div>
+
+  <!-- 💬 App -->
+  <div class="app" id="app">
+    <div class="sidebar">
+      <h2>Contacts</h2>
+      <div id="contacts"></div>
+    </div>
+    <div class="chat">
+      <div id="messages"></div>
+      <div id="composer">
+        <input id="msgInput" placeholder="Écris un message...">
+        <button id="sendBtn">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io("http://localhost:3000");
+    const authCard = document.getElementById("authCard");
+    const appEl = document.getElementById("app");
+    const authBtn = document.getElementById("authBtn");
+    const switchMode = document.getElementById("switchMode");
+    const authTitle = document.getElementById("authTitle");
+
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+
+    const contactsEl = document.getElementById("contacts");
+    const messagesEl = document.getElementById("messages");
+    const msgInput = document.getElementById("msgInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    let mode = "login";
+    let username = null;
+    let currentContact = null;
+
+    switchMode.onclick = () => {
+      mode = mode === "login" ? "signup" : "login";
+      authTitle.textContent = mode === "login" ? "Connexion" : "Inscription";
+      authBtn.textContent = mode === "login" ? "Se connecter" : "S'inscrire";
+      switchMode.textContent = mode === "login" ? "Pas de compte ? Inscris-toi" : "Déjà un compte ? Connecte-toi";
+    };
+
+    authBtn.onclick = async () => {
+      const user = usernameInput.value.trim();
+      const pass = passwordInput.value.trim();
+      if (!user || !pass) return alert("Remplis tous les champs !");
+      const res = await fetch(`/${mode}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username: user, password: pass })
+      });
+      const data = await res.json();
+      if (!data.success) return alert(data.error || "Erreur");
+      username = user;
+      authCard.style.display = "none";
+      appEl.style.display = "flex";
+      socket.emit("registerUser", username);
+    };
+
+    socket.on("onlineUsers", list => {
+      contactsEl.innerHTML = "";
+      list.filter(u => u !== username).forEach(u => {
+        const div = document.createElement("div");
+        div.className = "contact";
+        div.textContent = u;
+        div.onclick = () => { currentContact = u; messagesEl.innerHTML = ""; };
+        contactsEl.appendChild(div);
+      });
+    });
+
+    sendBtn.onclick = () => {
+      if (!currentContact) return alert("Choisis un contact");
+      const text = msgInput.value.trim();
+      if (!text) return;
+      const msg = { from: username, to: currentContact, text };
+      addMessage(msg);
+      socket.emit("sendMessage", msg);
+      msgInput.value = "";
+    };
+
+    socket.on("receiveMessage", msg => {
+      if (msg.to === username || msg.from === username)
+        addMessage(msg);
+    });
+
+    function addMessage(msg) {
+      const div = document.createElement("div");
+      div.className = "bubble " + (msg.from === username ? "me" : "them");
+      div.textContent = msg.text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  </script>
+</body>
+</html>
