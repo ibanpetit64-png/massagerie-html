@@ -109,7 +109,7 @@
     /* 3. Application de Chat */
     /* ---------------------------------- */
     #app {
-        display: none; /* Remplacé par flex en JS après connexion */
+        display: none; 
         width: 95%;
         max-width: 1300px;
         height: 90vh;
@@ -323,7 +323,7 @@
     let username = "";
     let currentContact = null;
     let isCurrentContactGroup = false;
-    let unreadCounts = {}; // { contactName/groupName: count }
+    let unreadCounts = {}; 
     let lastOnlineList = []; 
 
     // --- ÉLÉMENTS DU DOM ---
@@ -360,7 +360,6 @@
         localStorage.setItem('theme', newTheme);
         themeToggleBtn.textContent = newTheme === 'dark' ? '☀️' : '💡';
     };
-    // Charge le thème au démarrage
     const storedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', storedTheme);
     themeToggleBtn.textContent = storedTheme === 'dark' ? '☀️' : '💡';
@@ -368,13 +367,12 @@
     // 🚪 LOGOUT
     logoutBtn.onclick = () => {
         if (confirm("Voulez-vous vraiment vous déconnecter ?")) {
-            // Logique de déconnexion simple (nettoie l'état local et recharge)
             username = "";
             currentContact = null;
             unreadCounts = {};
             lastOnlineList = [];
-            socket.disconnect(); // Déconnecte le socket pour informer le serveur
-            window.location.reload(); // Recharge la page pour revenir à l'écran d'auth
+            socket.disconnect(); 
+            window.location.reload(); 
         }
     };
     
@@ -424,14 +422,10 @@
     // --- GESTION DES CONTACTS ET GROUPES ---
 
     function setActiveContact(targetName, isGroup = false) {
-        // 1. Réinitialiser le compteur et rafraîchir les listes
-        if (unreadCounts.hasOwnProperty(targetName)) {
-            unreadCounts[targetName] = 0;
-        }
+        if (unreadCounts.hasOwnProperty(targetName)) { unreadCounts[targetName] = 0; }
         updateContactList(lastOnlineList); 
         loadAndDisplayGroups();
         
-        // 2. Mettre à jour l'état et l'affichage
         currentContact = targetName; 
         isCurrentContactGroup = isGroup;
         
@@ -520,13 +514,12 @@
         return alert(data.error || "Erreur d'authentification");
       }
       
-      // Connexion réussie
       username = user;
       authCard.style.display = "none";
       appEl.style.display = "grid"; 
-      userProfileEl.textContent = `Bienvenue, ${username}`; // Affiche le nom d'utilisateur
+      userProfileEl.textContent = `Bienvenue, ${username}`; 
       
-      socket.connect(); // S'assure que le socket est connecté
+      socket.connect(); 
       socket.emit("registerUser", username);
       await loadAndDisplayGroups();
     };
