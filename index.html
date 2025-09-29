@@ -1,121 +1,277 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <title>Messagerie Authentifiée</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messagerie Moderne</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* ---------------------------------- */
-    /* Styles généraux */
+    /* 1. Variables de Thèmes (Clair/Sombre) */
     /* ---------------------------------- */
-    body {
-      margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-size: 400% 400%;
-      animation: bg 12s ease infinite;
+    :root {
+        /* Mode Clair (Par défaut) */
+        --bg-color: #f0f2f5;
+        --card-bg: #ffffff;
+        --text-color: #1c1e21;
+        --subtle-text: #606770;
+        --sidebar-bg: #f7f7f7;
+        --contact-hover: #eaf3ff;
+        --active-contact: #e0f0ff;
+        --main-brand: #007bff;
+        --message-mine: #007bff;
+        --message-other: #e4e6eb;
+        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --border-color: #dddddd;
+        --unread-bg: #f84d4d;
+        --icon-color: #606770;
     }
-    @keyframes bg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    [data-theme="dark"] {
+        /* Mode Sombre */
+        --bg-color: #18191a;
+        --card-bg: #242526;
+        --text-color: #e4e6eb;
+        --subtle-text: #b0b3b8;
+        --sidebar-bg: #242526;
+        --contact-hover: #3a3b3c;
+        --active-contact: #3e5066;
+        --main-brand: #3b82f6;
+        --message-mine: #3b82f6;
+        --message-other: #3a3b3c;
+        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --border-color: #3e4042;
+        --unread-bg: #e04e4e;
+        --icon-color: #b0b3b8;
+    }
 
-    /* Card d'authentification */
-    .card {
-      width: 360px;
-      background: rgba(255,255,255,0.9);
-      border-radius: 20px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-      padding: 30px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: 0.3s;
+    /* ---------------------------------- */
+    /* 2. Styles Généraux */
+    /* ---------------------------------- */
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-color);
+        color: var(--text-color);
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background 0.3s, color 0.3s;
+    }
+    
+    /* Boutons et Inputs */
+    .btn, .auth-btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+    .auth-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--main-brand);
+        color: white;
+        font-size: 18px;
+    }
+    .auth-btn:hover { background: #0069d9; }
+
+    /* Card d'Authentification */
+    #auth-card {
+        width: 380px;
+        background: var(--card-bg);
+        border-radius: 16px;
+        box-shadow: var(--shadow-light);
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     .input-group { margin-bottom: 20px; width: 100%; }
-    .input-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
-    .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-    .auth-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #74ebd5; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-    .auth-btn:hover { background: #60c9b0; }
-    .switch-auth { margin-top: 15px; font-size: 14px; color: #666; cursor: pointer; }
+    .input-group label { display: block; font-weight: 600; margin-bottom: 5px; color: var(--subtle-text); }
+    .input-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+    .switch-auth { margin-top: 15px; font-size: 14px; color: var(--main-brand); cursor: pointer; }
     .switch-auth:hover { text-decoration: underline; }
-    
+
     /* ---------------------------------- */
-    /* Styles pour l'application de chat */
+    /* 3. Application de Chat */
     /* ---------------------------------- */
     #app {
-      display: none; /* Cache par défaut */
-      width: 90%;
-      max-width: 1200px;
-      height: 85vh;
-      background: rgba(255,255,255,0.95);
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      overflow: hidden;
-      display: grid; /* Utilisation de GRID pour le layout à 2 colonnes */
-      grid-template-columns: 280px 1fr;
+        display: none; /* Remplacé par flex en JS après connexion */
+        width: 95%;
+        max-width: 1300px;
+        height: 90vh;
+        background: var(--card-bg);
+        border-radius: 20px;
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+        grid-template-columns: 320px 1fr;
+        display: grid;
     }
+    /* Panneau de Contacts (Sidebar) */
     #contacts-panel {
-      background: #f8f8f8;
-      border-right: 1px solid #eee;
-      padding: 20px 0 0 0;
-      overflow-y: auto;
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--border-color);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 20px;
     }
+    #sidebar-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--card-bg);
+    }
+    #user-profile { font-weight: 700; font-size: 1.1em; }
+    #options-menu {
+        display: flex;
+        gap: 10px;
+    }
+    .icon-btn {
+        background: transparent;
+        border: none;
+        color: var(--icon-color);
+        font-size: 1.2em;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .icon-btn:hover { color: var(--main-brand); }
+    
+    .section-title {
+        text-align: left;
+        color: var(--subtle-text);
+        font-size: 0.85em;
+        font-weight: 600;
+        padding: 10px 20px 5px;
+        margin-top: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .contact-container { padding: 0 5px; }
+
     .contact {
-      padding: 15px 20px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+        padding: 12px 15px;
+        margin-bottom: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
     }
-    .contact:hover, .contact.active {
-      background: #e0f7fa;
-    }
+    .contact:hover { background: var(--contact-hover); }
+    .contact.active { background: var(--active-contact); color: var(--main-brand); font-weight: 600;}
+    
+    .contact-info span:first-child { font-size: 1em; }
+    .contact-info span:last-child { color: var(--subtle-text); font-size: 0.8em; margin-left: 5px; }
+
     .unread-count {
-        background: #ff5252; /* Rouge vif */
+        background: var(--unread-bg);
         color: white;
-        border-radius: 50%;
-        padding: 2px 7px;
+        border-radius: 12px;
+        padding: 2px 8px;
         font-size: 12px;
         line-height: 1;
+        font-weight: 700;
     }
+    .contact.active .unread-count { background: white; color: var(--unread-bg); }
 
-    /* Fenêtre de chat */
+    /* Fenêtre de Chat */
     #chat-window { display: flex; flex-direction: column; }
-    #messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-    #input-area { display: flex; padding: 15px; border-top: 1px solid #eee; background: #fff; }
-    #msg-input { flex-grow: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; margin-right: 10px; font-size: 16px; }
-    #send-btn { padding: 12px 20px; border: none; border-radius: 20px; background: #74ebd5; color: white; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-    #send-btn:hover { background: #60c9b0; }
-    .message { max-width: 60%; padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; line-height: 1.4; word-wrap: break-word; }
-    .message.mine { align-self: flex-end; background: #74ebd5; color: white; border-bottom-right-radius: 2px; }
-    .message.other { align-self: flex-start; background: #f1f1f1; color: #333; border-bottom-left-radius: 2px; }
-    #current-contact-header { padding: 15px; border-bottom: 1px solid #eee; font-size: 1.2em; font-weight: bold; background: #fff; }
-    .message-info { font-size: 0.75em; color: rgba(0, 0, 0, 0.4); margin-top: 5px; text-align: right; }
-    .message.other .message-info { text-align: left; color: rgba(0, 0, 0, 0.6); }
-
-    /* Bouton de groupe */
-    #create-group-btn { 
-        width: 80%; 
-        margin: 0 auto 10px auto; 
-        display: block;
-        padding: 10px; 
-        cursor: pointer; 
-        border: 1px solid #74ebd5; 
-        background: #fff; 
-        border-radius: 8px;
+    #current-contact-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 1.2em;
         font-weight: bold;
+        background: var(--card-bg);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
+    #messages {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    #input-area {
+        display: flex;
+        padding: 15px;
+        border-top: 1px solid var(--border-color);
+        background: var(--card-bg);
+    }
+    #msg-input {
+        flex-grow: 1;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        margin-right: 10px;
+        font-size: 16px;
+        background: var(--card-bg);
+        color: var(--text-color);
+    }
+    #send-btn {
+        background: var(--main-brand);
+        color: white;
+        font-weight: bold;
+        border-radius: 20px;
+    }
+    #send-btn:hover { background: #0069d9; }
+
+    /* Bulles de Message */
+    .message {
+        max-width: 65%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        line-height: 1.4;
+        word-wrap: break-word;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    }
+    .message.mine {
+        align-self: flex-end;
+        background: var(--message-mine);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    .message.other {
+        align-self: flex-start;
+        background: var(--message-other);
+        color: var(--text-color);
+        border-bottom-left-radius: 4px;
+    }
+    .message-info {
+        font-size: 0.7em;
+        margin-top: 5px;
+        opacity: 0.7;
+        text-align: right;
+        color: inherit;
+    }
+    .message.other .message-info { text-align: left; }
+    
+    /* Indicateur de groupe dans la bulle */
+    .message-sender { font-weight: 700; font-size: 0.85em; margin-bottom: 3px; }
+
   </style>
 </head>
 <body>
 
-  <div id="auth-card" class="card">
-    <h2 id="auth-title">Connexion</h2>
+  <div id="auth-card">
+    <h2 id="auth-title" style="color: var(--text-color);">Bienvenue</h2>
     <div class="input-group">
       <label for="username-input">Nom d'utilisateur</label>
       <input type="text" id="username-input" placeholder="Entrez votre nom" />
@@ -130,14 +286,21 @@
 
   <div id="app">
     <div id="contacts-panel">
-        <button id="create-group-btn">Créer un Salon de Groupe</button>
-        
-        <p style="text-align: center; color: #666; font-size: 0.9em; margin-top: 10px;">SALONS DE GROUPE</p>
-        <div id="groups-list">
+        <div id="sidebar-header">
+            <span id="user-profile"></span>
+            <div id="options-menu">
+                <button id="create-group-btn" class="icon-btn" title="Créer un groupe">👥</button>
+                <button id="theme-toggle" class="icon-btn" title="Mode Sombre/Clair">💡</button>
+                <button id="logout-btn" class="icon-btn" title="Déconnexion">🚪</button>
+            </div>
+        </div>
+
+        <p class="section-title">SALONS DE GROUPE</p>
+        <div id="groups-list" class="contact-container">
             </div>
 
-        <p style="text-align: center; color: #666; font-size: 0.9em; margin-top: 20px;">UTILISATEURS EN LIGNE</p>
-        <div id="users-list">
+        <p class="section-title">UTILISATEURS EN LIGNE</p>
+        <div id="users-list" class="contact-container">
             </div>
     </div>
     <div id="chat-window">
@@ -148,7 +311,7 @@
         </div>
       <div id="input-area">
         <input type="text" id="msg-input" placeholder="Tapez votre message..." />
-        <button id="send-btn">Envoyer</button>
+        <button id="send-btn" class="btn">Envoyer</button>
       </div>
     </div>
   </div>
@@ -159,9 +322,9 @@
     let isLogin = true;
     let username = "";
     let currentContact = null;
-    let isCurrentContactGroup = false; // Nouveau : Indicateur de type de conversation
-    let unreadCounts = {}; // Nouveau : { contactName/groupName: count }
-    let lastOnlineList = []; // Nouveau : Pour rafraîchir la liste des utilisateurs
+    let isCurrentContactGroup = false;
+    let unreadCounts = {}; // { contactName/groupName: count }
+    let lastOnlineList = []; 
 
     // --- ÉLÉMENTS DU DOM ---
     const authCard = document.getElementById("auth-card");
@@ -171,28 +334,54 @@
     const passwordInput = document.getElementById("password-input");
     const authBtn = document.getElementById("auth-btn");
     const appEl = document.getElementById("app");
-    const contactsPanel = document.getElementById("contacts-panel");
     const messagesEl = document.getElementById("messages");
     const msgInput = document.getElementById("msg-input");
     const sendBtn = document.getElementById("send-btn");
     const contactNameEl = document.getElementById("contact-name");
+    const userProfileEl = document.getElementById("user-profile");
     const createGroupBtn = document.getElementById("create-group-btn");
     const groupsListEl = document.getElementById("groups-list");
     const usersListEl = document.getElementById("users-list");
+    const themeToggleBtn = document.getElementById("theme-toggle");
+    const logoutBtn = document.getElementById("logout-btn");
 
-    // --- FONCTIONS UTILS ---
+    // --- LOGIQUE D'INTERFACE ET UTILITAIRES ---
 
     function formatTime(date) {
         if (!date) return '';
         return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
+    // 💡 GESTION DU THÈME
+    themeToggleBtn.onclick = () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        themeToggleBtn.textContent = newTheme === 'dark' ? '☀️' : '💡';
+    };
+    // Charge le thème au démarrage
+    const storedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', storedTheme);
+    themeToggleBtn.textContent = storedTheme === 'dark' ? '☀️' : '💡';
+    
+    // 🚪 LOGOUT
+    logoutBtn.onclick = () => {
+        if (confirm("Voulez-vous vraiment vous déconnecter ?")) {
+            // Logique de déconnexion simple (nettoie l'état local et recharge)
+            username = "";
+            currentContact = null;
+            unreadCounts = {};
+            lastOnlineList = [];
+            socket.disconnect(); // Déconnecte le socket pour informer le serveur
+            window.location.reload(); // Recharge la page pour revenir à l'écran d'auth
+        }
+    };
+    
     function addMessage(msg) {
-        // Ajout d'un message, vérifie si c'est pour la conversation actuelle
-        // Pour les groupes, 'to' est le nom du groupe. Pour les privés, 'to' ou 'from' est le contact actuel.
         const relevant = isCurrentContactGroup 
-            ? msg.to === currentContact // Message de groupe
-            : (msg.to === username && msg.from === currentContact) || (msg.from === username && msg.to === currentContact); // Message privé
+            ? msg.to === currentContact 
+            : (msg.to === username && msg.from === currentContact) || (msg.from === username && msg.to === currentContact);
 
         if (!relevant) return; 
 
@@ -201,7 +390,7 @@
         
         let senderInfo = '';
         if (msg.isGroup && msg.from !== username) {
-            senderInfo = `<span style="font-weight:bold; font-size:0.85em; display:block; margin-bottom:5px;">${msg.from}</span>`;
+            senderInfo = `<div class="message-sender" style="color:${document.documentElement.getAttribute('data-theme') === 'dark' ? '#93c5fd' : '#1d4ed8'};">${msg.from}</div>`;
         }
 
         div.innerHTML = `
@@ -215,23 +404,19 @@
 
     async function loadMessages(targetName, isGroup) {
         messagesEl.innerHTML = "";
-        contactNameEl.textContent = isGroup ? `[Groupe] ${targetName}` : targetName;
+        contactNameEl.textContent = isGroup ? `${targetName} (Groupe)` : targetName;
         currentContact = targetName;
         isCurrentContactGroup = isGroup;
 
         try {
-            // L'API est unifiée : /messages/utilisateur_actuel/cible (cible = nom d'utilisateur ou nom de groupe)
             const res = await fetch(\`/messages/\${username}/\${targetName}\`);
             const messages = await res.json();
             
             if (res.ok && messages) {
                 messages.forEach(addMessage);
-            } else {
-                console.error("Erreur de chargement de l'historique:", messages.error);
             }
-
         } catch (error) {
-            console.error("Erreur réseau pour l'historique:", error);
+            console.error("Erreur de chargement de l'historique:", error);
         }
     }
 
@@ -239,20 +424,18 @@
     // --- GESTION DES CONTACTS ET GROUPES ---
 
     function setActiveContact(targetName, isGroup = false) {
-        // 1. Réinitialiser le compteur
+        // 1. Réinitialiser le compteur et rafraîchir les listes
         if (unreadCounts.hasOwnProperty(targetName)) {
             unreadCounts[targetName] = 0;
         }
         updateContactList(lastOnlineList); 
         loadAndDisplayGroups();
         
-        // 2. Changer de contact
+        // 2. Mettre à jour l'état et l'affichage
         currentContact = targetName; 
         isCurrentContactGroup = isGroup;
         
         document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
-        
-        // Trouver et activer le contact/groupe dans le DOM
         const targetEl = document.querySelector(`.contact[data-target-name="${targetName}"]`);
         if(targetEl) targetEl.classList.add('active');
         
@@ -260,30 +443,23 @@
     }
 
     function updateContactList(list) {
-        lastOnlineList = list; // Sauvegarde la liste
+        lastOnlineList = list;
         usersListEl.innerHTML = "";
         
-        // Initialise les compteurs pour les nouveaux utilisateurs
         list.forEach(u => {
-            if (u !== username && !unreadCounts.hasOwnProperty(u)) {
-                unreadCounts[u] = 0;
-            }
+            if (u !== username && !unreadCounts.hasOwnProperty(u)) { unreadCounts[u] = 0; }
         });
 
-        // Affiche les utilisateurs en ligne
         list.filter(u => u !== username).forEach(u => {
             const div = document.createElement("div");
             div.className = "contact" + (u === currentContact && !isCurrentContactGroup ? " active" : "");
-            div.setAttribute('data-target-name', u); // Pour le ciblage
+            div.setAttribute('data-target-name', u);
             
             const count = unreadCounts[u] || 0;
             let countHtml = count > 0 ? `<span class="unread-count">${count}</span>` : '';
 
-            div.innerHTML = `<span>${u}</span> ${countHtml}`;
-
-            div.onclick = () => { 
-                setActiveContact(u, false);
-            };
+            div.innerHTML = `<div class="contact-info"><span>👤 ${u}</span></div> ${countHtml}`;
+            div.onclick = () => { setActiveContact(u, false); };
             usersListEl.appendChild(div);
         });
     }
@@ -298,23 +474,17 @@
             groups.forEach(group => {
                 const groupName = group.name;
 
-                // Initialise le compteur pour le groupe
-                if (!unreadCounts.hasOwnProperty(groupName)) {
-                    unreadCounts[groupName] = 0;
-                }
+                if (!unreadCounts.hasOwnProperty(groupName)) { unreadCounts[groupName] = 0; }
 
                 const div = document.createElement("div");
                 div.className = "contact" + (groupName === currentContact && isCurrentContactGroup ? " active" : "");
-                div.setAttribute('data-target-name', groupName); // Pour le ciblage
+                div.setAttribute('data-target-name', groupName);
                 
                 const count = unreadCounts[groupName] || 0;
                 let countHtml = count > 0 ? `<span class="unread-count">${count}</span>` : '';
 
-                div.innerHTML = `<span>💬 ${groupName}</span> ${countHtml}`;
-
-                div.onclick = () => {
-                    setActiveContact(groupName, true);
-                };
+                div.innerHTML = `<div class="contact-info"><span>💬 ${groupName}</span></div> ${countHtml}`;
+                div.onclick = () => { setActiveContact(groupName, true); };
                 groupsListEl.appendChild(div);
             });
 
@@ -350,21 +520,22 @@
         return alert(data.error || "Erreur d'authentification");
       }
       
-      // Connexion/Inscription réussie
+      // Connexion réussie
       username = user;
       authCard.style.display = "none";
       appEl.style.display = "grid"; 
+      userProfileEl.textContent = `Bienvenue, ${username}`; // Affiche le nom d'utilisateur
       
-      // Enregistre l'utilisateur connecté sur le serveur Socket.IO et rejoint les rooms
+      socket.connect(); // S'assure que le socket est connecté
       socket.emit("registerUser", username);
-      await loadAndDisplayGroups(); // Charge les groupes existants
+      await loadAndDisplayGroups();
     };
 
-    // --- GESTION DES GROUPES ---
-
+    // --- GESTION SOCKET.IO ET ACTIONS ---
+    
     createGroupBtn.onclick = async () => {
         const groupName = prompt("Entrez le nom du nouveau salon de groupe:");
-        if (!groupName) return;
+        if (!groupName || groupName.length < 3) return alert("Nom invalide.");
 
         try {
             const res = await fetch("/createGroup", {
@@ -376,8 +547,8 @@
 
             if (data.success) {
                 alert(`Groupe "${groupName}" créé avec succès !`);
-                await loadAndDisplayGroups(); // Rafraîchit les groupes
-                socket.emit('registerUser', username); // Demande au serveur de rejoindre la room
+                await loadAndDisplayGroups();
+                socket.emit('registerUser', username); 
                 setActiveContact(groupName, true);
             } else {
                 alert(`Erreur: ${data.error}`);
@@ -387,9 +558,6 @@
         }
     };
 
-
-    // --- GESTION SOCKET.IO ---
-    
     socket.on("onlineUsers", updateContactList); 
 
     sendBtn.onclick = () => {
@@ -410,23 +578,20 @@
     };
 
     socket.on("receiveMessage", msg => {
-        // Détermine l'expéditeur/cible pour le compteur
         const target = msg.isGroup ? msg.to : (msg.from === username ? msg.to : msg.from);
         
-        // 1. GESTION DES NOTIFICATIONS DE NON-LUS
-        // Si le message est pour l'utilisateur (to == username ou isGroup) ET ne concerne pas la conversation active
+        // GESTION DES NOTIFICATIONS DE NON-LUS
         if (target !== currentContact) {
             if (unreadCounts.hasOwnProperty(target)) {
                 unreadCounts[target]++;
             } else {
                 unreadCounts[target] = 1;
             }
-            // Rafraîchir les listes pour afficher le badge
             updateContactList(lastOnlineList);
             loadAndDisplayGroups();
         }
         
-        // 2. AFFICHAGE DANS LA FENÊTRE
+        // AFFICHAGE DANS LA FENÊTRE
         addMessage(msg);
     });
 
