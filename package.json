@@ -13,9 +13,7 @@
   "dependencies": {
     "express": "^5.1.0",
     "socket.io": "^4.8.1",
-    // ---------------------------------
-    // NOUVELLES DÉPENDANCES CI-DESSOUS
-    // ---------------------------------
+    // NOUVELLES DÉPENDANCES
     "bcrypt": "^5.1.1",
     "mongoose": "^8.2.0"
   }
