@@ -2,37 +2,378 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Messagerie Auth</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Messagerie Authentifiée</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    /* ... (Votre CSS reste le même) ... */
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-size: 400% 400%;
+      animation: bg 12s ease infinite;
+    }
+    @keyframes bg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    .card {
+      width: 360px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: 0.3s;
+    }
+    .input-group {
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    .input-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    .auth-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #74ebd5;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .auth-btn:hover {
+      background: #60c9b0;
+    }
+    .switch-auth {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+    }
+    .switch-auth:hover {
+      text-decoration: underline;
+    }
+    
+    /* Styles pour l'application de chat */
+    #app {
+      display: none; /* Cache par défaut */
+      width: 90%;
+      max-width: 1200px;
+      height: 85vh;
+      background: rgba(255,255,255,0.95);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      overflow: hidden;
+      grid-template-columns: 280px 1fr;
+    }
+    #contacts {
+      background: #f8f8f8;
+      border-right: 1px solid #eee;
+      padding: 20px 0;
+      overflow-y: auto;
+    }
+    .contact {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .contact:hover, .contact.active {
+      background: #e0f7fa;
+    }
+    #chat-window {
+      display: flex;
+      flex-direction: column;
+    }
+    #messages {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    #input-area {
+      display: flex;
+      padding: 15px;
+      border-top: 1px solid #eee;
+      background: #fff;
+    }
+    #msg-input {
+      flex-grow: 1;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    #send-btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 20px;
+      background: #74ebd5;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #send-btn:hover {
+      background: #60c9b0;
+    }
+    .message {
+      max-width: 60%;
+      padding: 10px 15px;
+      border-radius: 18px;
+      margin-bottom: 10px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    .message.mine {
+      align-self: flex-end;
+      background: #74ebd5; /* Vert/Cyan */
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+    .message.other {
+      align-self: flex-start;
+      background: #f1f1f1;
+      color: #333;
+      border-bottom-left-radius: 2px;
+    }
+    #current-contact-header {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      font-size: 1.2em;
+      font-weight: bold;
+      background: #fff;
+    }
+    .message-info {
+        font-size: 0.75em;
+        color: rgba(0, 0, 0, 0.4);
+        margin-top: 5px;
+        text-align: right;
+    }
+    .message.other .message-info {
+        text-align: left;
+        color: rgba(0, 0, 0, 0.6);
+    }
+
+  </style>
 </head>
 <body>
-  <div id="auth">
-    <h2>Connexion</h2>
-    <input id="username" placeholder="Nom d'utilisateur">
-    <input id="password" type="password" placeholder="Mot de passe">
-    <button id="loginBtn">Connexion</button>
-    <p>Pas de compte ? <a id="showRegister">Inscris-toi</a></p>
+
+  <div id="auth-card" class="card">
+    <h2 id="auth-title">Connexion</h2>
+    <div class="input-group">
+      <label for="username-input">Nom d'utilisateur</label>
+      <input type="text" id="username-input" placeholder="Entrez votre nom" />
+    </div>
+    <div class="input-group">
+      <label for="password-input">Mot de passe</label>
+      <input type="password" id="password-input" placeholder="Entrez votre mot de passe" />
+    </div>
+    <button id="auth-btn" class="auth-btn">Se connecter</button>
+    <p id="switch-auth" class="switch-auth">Pas de compte ? S'inscrire</p>
   </div>
 
-  <div id="register" style="display:none;">
-    <h2>Inscription</h2>
-    <input id="regUsername" placeholder="Nom d'utilisateur">
-    <input id="regPassword" type="password" placeholder="Mot de passe">
-    <button id="registerBtn">Créer un compte</button>
-    <p>Déjà un compte ? <a id="showLogin">Connecte-toi</a></p>
-  </div>
-
-  <div id="chat" style="display:none;">
-    <h2>Bienvenue <span id="userDisplay"></span> 👋</h2>
-    <div id="messages"></div>
-    <div id="composer">
-      <input id="msgInput" placeholder="Écris ton message...">
-      <button id="sendBtn">Envoyer</button>
+  <div id="app">
+    <div id="contacts">
+      <p style="text-align: center; color: #666; margin-top: 20px;">Utilisateurs en ligne</p>
+    </div>
+    <div id="chat-window">
+      <div id="current-contact-header">
+        <span id="contact-name">Sélectionnez un contact</span>
+      </div>
+      <div id="messages">
+        </div>
+      <div id="input-area">
+        <input type="text" id="msg-input" placeholder="Tapez votre message..." />
+        <button id="send-btn">Envoyer</button>
+      </div>
     </div>
   </div>
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    // --- VARIABLES GLOBALES ---
+    const socket = io();
+    let isLogin = true;
+    let username = "";
+    let currentContact = null;
+
+    // --- ÉLÉMENTS DU DOM ---
+    const authCard = document.getElementById("auth-card");
+    const authTitle = document.getElementById("auth-title");
+    const switchAuth = document.getElementById("switch-auth");
+    const usernameInput = document.getElementById("username-input");
+    const passwordInput = document.getElementById("password-input");
+    const authBtn = document.getElementById("auth-btn");
+    const appEl = document.getElementById("app");
+    const contactsEl = document.getElementById("contacts");
+    const messagesEl = document.getElementById("messages");
+    const msgInput = document.getElementById("msg-input");
+    const sendBtn = document.getElementById("send-btn");
+    const contactNameEl = document.getElementById("contact-name");
+
+    // --- FONCTIONS UTILS ---
+
+    function formatTime(date) {
+        if (!(date instanceof Date)) return '';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function addMessage(msg) {
+        // Ajout d'un message, vérifie si c'est pour la conversation actuelle
+        if (msg.to !== username && msg.from !== username && msg.from !== currentContact && msg.to !== currentContact) {
+            return; // Ignore les messages qui ne concernent pas cette conversation
+        }
+
+        const div = document.createElement("div");
+        div.className = "message " + (msg.from === username ? "mine" : "other");
+        div.innerHTML = `
+            ${msg.text}
+            <div class="message-info">${formatTime(new Date(msg.timestamp))}</div>
+        `;
+        messagesEl.appendChild(div);
+        // Scroll automatique vers le bas
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function loadMessages(targetUsername) {
+        messagesEl.innerHTML = ""; // Vide les messages précédents
+        contactNameEl.textContent = targetUsername;
+
+        try {
+            // Appel à la nouvelle API pour l'historique
+            const res = await fetch(\`/messages/\${username}/\${targetUsername}\`);
+            const messages = await res.json();
+            
+            if (res.ok && messages) {
+                messages.forEach(addMessage);
+            } else {
+                console.error("Erreur de chargement de l'historique:", messages.error);
+            }
+
+        } catch (error) {
+            console.error("Erreur réseau pour l'historique:", error);
+        }
+    }
+
+
+    // --- GESTION DE L'AUTHENTIFICATION ---
+
+    switchAuth.onclick = () => {
+      isLogin = !isLogin;
+      authTitle.textContent = isLogin ? "Connexion" : "Inscription";
+      authBtn.textContent = isLogin ? "Se connecter" : "S'inscrire";
+      switchAuth.textContent = isLogin ? "Pas de compte ? S'inscrire" : "Déjà un compte ? Se connecter";
+    };
+
+    authBtn.onclick = async () => {
+      const user = usernameInput.value.trim();
+      const pass = passwordInput.value.trim();
+      if (!user || !pass) return alert("Veuillez remplir tous les champs.");
+
+      const endpoint = isLogin ? "/login" : "/signup";
+      
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: user, password: pass })
+      });
+      const data = await res.json();
+      
+      if (!data.success) {
+        // Affiche l'erreur venant du serveur (ex: nom d'utilisateur déjà pris)
+        return alert(data.error || "Erreur d'authentification");
+      }
+      
+      // Connexion/Inscription réussie
+      username = user;
+      authCard.style.display = "none";
+      appEl.style.display = "grid"; // Utilise grid pour le layout du chat
+      
+      // Enregistre l'utilisateur connecté sur le serveur Socket.IO
+      socket.emit("registerUser", username);
+    };
+
+    // --- GESTION DES CONTACTS ---
+
+    socket.on("onlineUsers", list => {
+      contactsEl.innerHTML = "<p style='text-align: center; color: #666; margin-top: 20px;'>Utilisateurs en ligne</p>";
+      
+      // Filtre l'utilisateur lui-même
+      list.filter(u => u !== username).forEach(u => {
+        const div = document.createElement("div");
+        div.className = "contact" + (u === currentContact ? " active" : "");
+        div.textContent = u;
+        
+        div.onclick = () => { 
+            // ⚠️ Nouvelle logique : Charger l'historique
+            currentContact = u; 
+            
+            // Mise à jour visuelle des contacts
+            document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+            div.classList.add('active');
+            
+            loadMessages(u); 
+        };
+        contactsEl.appendChild(div);
+      });
+    });
+
+    // --- GESTION DE L'ENVOI ET DE LA RÉCEPTION DES MESSAGES ---
+
+    sendBtn.onclick = () => {
+      if (!currentContact) return alert("Choisis un contact");
+      const text = msgInput.value.trim();
+      if (!text) return;
+      
+      // Le message inclut désormais l'horodatage côté client (peut être généré serveur aussi)
+      const msg = { 
+        from: username, 
+        to: currentContact, 
+        text, 
+        timestamp: new Date().toISOString() 
+      };
+      
+      // addMessage(msg); // Laissez le 'socket.on("receiveMessage")' gérer l'affichage pour simplifier la logique
+      socket.emit("sendMessage", msg);
+      msgInput.value = "";
+    };
+
+    // Le serveur renvoie le message à l'émetteur et au destinataire
+    socket.on("receiveMessage", msg => {
+        // Le code serveur gère déjà l'envoi uniquement aux deux parties
+        // Ici, on vérifie juste si c'est la conversation actuellement ouverte
+        if (msg.to === username && msg.from === currentContact || 
+            msg.from === username && msg.to === currentContact) {
+            
+            addMessage(msg);
+        }
+        
+        // Si le message est pour moi mais que je suis sur un autre contact, je pourrais mettre une notification
+        // (Fonctionnalité future)
+    });
+
+  </script>
 </body>
 </html>
