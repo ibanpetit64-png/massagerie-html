@@ -1,10 +1,9 @@
+// server.js
 const express = require("express");
-const fs = require("fs-extra");
-const bcrypt = require("bcrypt");
-const session = require("express-session");
-const bodyParser = require("body-parser");
 const http = require("http");
 const { Server } = require("socket.io");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
@@ -12,62 +11,61 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
+// Middleware
+app.use(express.json());
 app.use(express.static(__dirname));
-app.use(bodyParser.json());
-app.use(
-  session({
-    secret: "super_secret_key",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
 
-// Charger la base utilisateur
-const USERS_FILE = "./users.json";
-if (!fs.existsSync(USERS_FILE)) fs.writeJsonSync(USERS_FILE, []);
+// Fichier de base utilisateurs
+const USERS_FILE = path.join(__dirname, "users.json");
 
-// --- ROUTES AUTH ---
-app.post("/register", async (req, res) => {
+// Charger les utilisateurs
+let users = [];
+if (fs.existsSync(USERS_FILE)) {
+  users = JSON.parse(fs.readFileSync(USERS_FILE));
+}
+
+// 🔐 Route d'inscription
+app.post("/register", (req, res) => {
   const { username, password } = req.body;
   if (!username || !password)
     return res.status(400).json({ message: "Champs manquants" });
 
-  const users = await fs.readJson(USERS_FILE);
-  if (users.find((u) => u.username === username))
-    return res.status(400).json({ message: "Utilisateur déjà existant" });
+  const exists = users.find((u) => u.username === username);
+  if (exists) return res.status(400).json({ message: "Utilisateur existant" });
 
-  const hashed = await bcrypt.hash(password, 10);
-  users.push({ username, password: hashed });
-  await fs.writeJson(USERS_FILE, users);
-  res.json({ message: "Compte créé avec succès" });
+  users.push({ username, password });
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  res.json({ message: "Inscription réussie" });
 });
 
-app.post("/login", async (req, res) => {
+// 🔑 Route de connexion
+app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  const users = await fs.readJson(USERS_FILE);
-  const user = users.find((u) => u.username === username);
-  if (!user) return res.status(400).json({ message: "Utilisateur inconnu" });
+  const user = users.find(
+    (u) => u.username === username && u.password === password
+  );
+  if (!user) return res.status(401).json({ message: "Identifiants invalides" });
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(400).json({ message: "Mot de passe incorrect" });
-
-  req.session.user = username;
-  res.json({ message: "Connexion réussie", username });
+  res.json({ message: "Connexion réussie" });
 });
 
+// 📡 Messagerie Socket.IO
 io.on("connection", (socket) => {
-  console.log("🟢 Un utilisateur est connecté");
+  console.log("✅ Utilisateur connecté");
 
-  socket.on("sendMessage", (data) => {
-    io.emit("receiveMessage", data);
+  socket.on("join", (username) => {
+    socket.username = username;
+    socket.broadcast.emit("system", `${username} a rejoint la discussion`);
+  });
+
+  socket.on("message", (data) => {
+    io.emit("message", { from: socket.username, text: data.text });
   });
 
   socket.on("disconnect", () => {
-    console.log("🔴 Utilisateur déconnecté");
+    if (socket.username)
+      socket.broadcast.emit("system", `${socket.username} s'est déconnecté`);
   });
 });
 
-server.listen(PORT, () =>
-  console.log(`✅ Serveur en ligne sur http://localhost:${PORT}`)
-);
+server.listen(PORT, () => console.log(`🚀 Serveur lancé sur le port ${PORT}`));
