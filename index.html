@@ -1,128 +1,38 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Messagerie Sécurisée</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    #auth, #chat {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(255,255,255,0.2);
-      width: 320px;
-    }
-    input {
-      width: 100%;
-      padding: 8px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: none;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #4CAF50;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-    }
-    #chat { display: none; }
-    #messages {
-      height: 200px;
-      overflow-y: auto;
-      background: #222;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .msg {
-      margin-bottom: 6px;
-    }
-    .msg span {
-      font-weight: bold;
-      color: #4CAF50;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messagerie Auth</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="auth">
-    <h2>Connexion / Inscription</h2>
+    <h2>Connexion</h2>
     <input id="username" placeholder="Nom d'utilisateur">
     <input id="password" type="password" placeholder="Mot de passe">
     <button id="loginBtn">Connexion</button>
-    <button id="registerBtn" style="background:#555;margin-top:5px;">Créer un compte</button>
-    <p id="authMsg"></p>
+    <p>Pas de compte ? <a id="showRegister">Inscris-toi</a></p>
   </div>
 
-  <div id="chat">
-    <h3 id="welcome"></h3>
+  <div id="register" style="display:none;">
+    <h2>Inscription</h2>
+    <input id="regUsername" placeholder="Nom d'utilisateur">
+    <input id="regPassword" type="password" placeholder="Mot de passe">
+    <button id="registerBtn">Créer un compte</button>
+    <p>Déjà un compte ? <a id="showLogin">Connecte-toi</a></p>
+  </div>
+
+  <div id="chat" style="display:none;">
+    <h2>Bienvenue <span id="userDisplay"></span> 👋</h2>
     <div id="messages"></div>
-    <input id="msgInput" placeholder="Écris un message...">
-    <button id="sendBtn">Envoyer</button>
+    <div id="composer">
+      <input id="msgInput" placeholder="Écris ton message...">
+      <button id="sendBtn">Envoyer</button>
+    </div>
   </div>
 
-  <script>
-    const socket = io();
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
-    const authMsg = document.getElementById('authMsg');
-
-    async function postData(url, data) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-      });
-      return res.json();
-    }
-
-    loginBtn.onclick = async () => {
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value.trim();
-      const res = await postData('/login', { username, password });
-      if (res.username) showChat(res.username);
-      else authMsg.innerText = res.message;
-    };
-
-    registerBtn.onclick = async () => {
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value.trim();
-      const res = await postData('/register', { username, password });
-      authMsg.innerText = res.message;
-    };
-
-    function showChat(user) {
-      document.getElementById('auth').style.display = 'none';
-      document.getElementById('chat').style.display = 'block';
-      document.getElementById('welcome').innerText = 'Bienvenue ' + user;
-    }
-
-    const sendBtn = document.getElementById('sendBtn');
-    const msgInput = document.getElementById('msgInput');
-    const messages = document.getElementById('messages');
-
-    sendBtn.onclick = () => {
-      const text = msgInput.value.trim();
-      if(!text) return;
-      socket.emit('sendMessage', { from: welcome.innerText, text });
-      msgInput.value = '';
-    };
-
-    socket.on('receiveMessage', (data) => {
-      const div = document.createElement('div');
-      div.classList.add('msg');
-      div.innerHTML = `<span>${data.from}:</span> ${data.text}`;
-      messages.appendChild
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
