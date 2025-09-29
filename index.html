@@ -5,7 +5,9 @@
   <title>Messagerie Authentifiée</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
-    /* ... (Votre CSS reste le même) ... */
+    /* ---------------------------------- */
+    /* Styles généraux */
+    /* ---------------------------------- */
     body {
       margin: 0;
       font-family: "Segoe UI", sans-serif;
@@ -19,6 +21,7 @@
     }
     @keyframes bg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
+    /* Card d'authentification */
     .card {
       width: 360px;
       background: rgba(255,255,255,0.9);
@@ -30,50 +33,17 @@
       align-items: center;
       transition: 0.3s;
     }
-    .input-group {
-      margin-bottom: 20px;
-      width: 100%;
-    }
-    .input-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 5px;
-      color: #333;
-    }
-    .input-group input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-sizing: border-box;
-      font-size: 16px;
-    }
-    .auth-btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      background: #74ebd5;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .auth-btn:hover {
-      background: #60c9b0;
-    }
-    .switch-auth {
-      margin-top: 15px;
-      font-size: 14px;
-      color: #666;
-      cursor: pointer;
-    }
-    .switch-auth:hover {
-      text-decoration: underline;
-    }
+    .input-group { margin-bottom: 20px; width: 100%; }
+    .input-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
+    .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+    .auth-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #74ebd5; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+    .auth-btn:hover { background: #60c9b0; }
+    .switch-auth { margin-top: 15px; font-size: 14px; color: #666; cursor: pointer; }
+    .switch-auth:hover { text-decoration: underline; }
     
+    /* ---------------------------------- */
     /* Styles pour l'application de chat */
+    /* ---------------------------------- */
     #app {
       display: none; /* Cache par défaut */
       width: 90%;
@@ -83,12 +53,13 @@
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       overflow: hidden;
+      display: grid; /* Utilisation de GRID pour le layout à 2 colonnes */
       grid-template-columns: 280px 1fr;
     }
-    #contacts {
+    #contacts-panel {
       background: #f8f8f8;
       border-right: 1px solid #eee;
-      padding: 20px 0;
+      padding: 20px 0 0 0;
       overflow-y: auto;
     }
     .contact {
@@ -97,86 +68,48 @@
       cursor: pointer;
       font-weight: 500;
       transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .contact:hover, .contact.active {
       background: #e0f7fa;
     }
-    #chat-window {
-      display: flex;
-      flex-direction: column;
-    }
-    #messages {
-      flex-grow: 1;
-      padding: 20px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-    #input-area {
-      display: flex;
-      padding: 15px;
-      border-top: 1px solid #eee;
-      background: #fff;
-    }
-    #msg-input {
-      flex-grow: 1;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 20px;
-      margin-right: 10px;
-      font-size: 16px;
-    }
-    #send-btn {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 20px;
-      background: #74ebd5;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    #send-btn:hover {
-      background: #60c9b0;
-    }
-    .message {
-      max-width: 60%;
-      padding: 10px 15px;
-      border-radius: 18px;
-      margin-bottom: 10px;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-    .message.mine {
-      align-self: flex-end;
-      background: #74ebd5; /* Vert/Cyan */
-      color: white;
-      border-bottom-right-radius: 2px;
-    }
-    .message.other {
-      align-self: flex-start;
-      background: #f1f1f1;
-      color: #333;
-      border-bottom-left-radius: 2px;
-    }
-    #current-contact-header {
-      padding: 15px;
-      border-bottom: 1px solid #eee;
-      font-size: 1.2em;
-      font-weight: bold;
-      background: #fff;
-    }
-    .message-info {
-        font-size: 0.75em;
-        color: rgba(0, 0, 0, 0.4);
-        margin-top: 5px;
-        text-align: right;
-    }
-    .message.other .message-info {
-        text-align: left;
-        color: rgba(0, 0, 0, 0.6);
+    .unread-count {
+        background: #ff5252; /* Rouge vif */
+        color: white;
+        border-radius: 50%;
+        padding: 2px 7px;
+        font-size: 12px;
+        line-height: 1;
     }
 
+    /* Fenêtre de chat */
+    #chat-window { display: flex; flex-direction: column; }
+    #messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+    #input-area { display: flex; padding: 15px; border-top: 1px solid #eee; background: #fff; }
+    #msg-input { flex-grow: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; margin-right: 10px; font-size: 16px; }
+    #send-btn { padding: 12px 20px; border: none; border-radius: 20px; background: #74ebd5; color: white; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+    #send-btn:hover { background: #60c9b0; }
+    .message { max-width: 60%; padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; line-height: 1.4; word-wrap: break-word; }
+    .message.mine { align-self: flex-end; background: #74ebd5; color: white; border-bottom-right-radius: 2px; }
+    .message.other { align-self: flex-start; background: #f1f1f1; color: #333; border-bottom-left-radius: 2px; }
+    #current-contact-header { padding: 15px; border-bottom: 1px solid #eee; font-size: 1.2em; font-weight: bold; background: #fff; }
+    .message-info { font-size: 0.75em; color: rgba(0, 0, 0, 0.4); margin-top: 5px; text-align: right; }
+    .message.other .message-info { text-align: left; color: rgba(0, 0, 0, 0.6); }
+
+    /* Bouton de groupe */
+    #create-group-btn { 
+        width: 80%; 
+        margin: 0 auto 10px auto; 
+        display: block;
+        padding: 10px; 
+        cursor: pointer; 
+        border: 1px solid #74ebd5; 
+        background: #fff; 
+        border-radius: 8px;
+        font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -196,12 +129,20 @@
   </div>
 
   <div id="app">
-    <div id="contacts">
-      <p style="text-align: center; color: #666; margin-top: 20px;">Utilisateurs en ligne</p>
+    <div id="contacts-panel">
+        <button id="create-group-btn">Créer un Salon de Groupe</button>
+        
+        <p style="text-align: center; color: #666; font-size: 0.9em; margin-top: 10px;">SALONS DE GROUPE</p>
+        <div id="groups-list">
+            </div>
+
+        <p style="text-align: center; color: #666; font-size: 0.9em; margin-top: 20px;">UTILISATEURS EN LIGNE</p>
+        <div id="users-list">
+            </div>
     </div>
     <div id="chat-window">
       <div id="current-contact-header">
-        <span id="contact-name">Sélectionnez un contact</span>
+        <span id="contact-name">Sélectionnez un contact ou un groupe</span>
       </div>
       <div id="messages">
         </div>
@@ -218,6 +159,9 @@
     let isLogin = true;
     let username = "";
     let currentContact = null;
+    let isCurrentContactGroup = false; // Nouveau : Indicateur de type de conversation
+    let unreadCounts = {}; // Nouveau : { contactName/groupName: count }
+    let lastOnlineList = []; // Nouveau : Pour rafraîchir la liste des utilisateurs
 
     // --- ÉLÉMENTS DU DOM ---
     const authCard = document.getElementById("auth-card");
@@ -227,43 +171,57 @@
     const passwordInput = document.getElementById("password-input");
     const authBtn = document.getElementById("auth-btn");
     const appEl = document.getElementById("app");
-    const contactsEl = document.getElementById("contacts");
+    const contactsPanel = document.getElementById("contacts-panel");
     const messagesEl = document.getElementById("messages");
     const msgInput = document.getElementById("msg-input");
     const sendBtn = document.getElementById("send-btn");
     const contactNameEl = document.getElementById("contact-name");
+    const createGroupBtn = document.getElementById("create-group-btn");
+    const groupsListEl = document.getElementById("groups-list");
+    const usersListEl = document.getElementById("users-list");
 
     // --- FONCTIONS UTILS ---
 
     function formatTime(date) {
-        if (!(date instanceof Date)) return '';
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (!date) return '';
+        return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     function addMessage(msg) {
         // Ajout d'un message, vérifie si c'est pour la conversation actuelle
-        if (msg.to !== username && msg.from !== username && msg.from !== currentContact && msg.to !== currentContact) {
-            return; // Ignore les messages qui ne concernent pas cette conversation
-        }
+        // Pour les groupes, 'to' est le nom du groupe. Pour les privés, 'to' ou 'from' est le contact actuel.
+        const relevant = isCurrentContactGroup 
+            ? msg.to === currentContact // Message de groupe
+            : (msg.to === username && msg.from === currentContact) || (msg.from === username && msg.to === currentContact); // Message privé
+
+        if (!relevant) return; 
 
         const div = document.createElement("div");
         div.className = "message " + (msg.from === username ? "mine" : "other");
+        
+        let senderInfo = '';
+        if (msg.isGroup && msg.from !== username) {
+            senderInfo = `<span style="font-weight:bold; font-size:0.85em; display:block; margin-bottom:5px;">${msg.from}</span>`;
+        }
+
         div.innerHTML = `
+            ${senderInfo}
             ${msg.text}
-            <div class="message-info">${formatTime(new Date(msg.timestamp))}</div>
+            <div class="message-info">${formatTime(msg.timestamp)}</div>
         `;
         messagesEl.appendChild(div);
-        // Scroll automatique vers le bas
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    async function loadMessages(targetUsername) {
-        messagesEl.innerHTML = ""; // Vide les messages précédents
-        contactNameEl.textContent = targetUsername;
+    async function loadMessages(targetName, isGroup) {
+        messagesEl.innerHTML = "";
+        contactNameEl.textContent = isGroup ? `[Groupe] ${targetName}` : targetName;
+        currentContact = targetName;
+        isCurrentContactGroup = isGroup;
 
         try {
-            // Appel à la nouvelle API pour l'historique
-            const res = await fetch(\`/messages/\${username}/\${targetUsername}\`);
+            // L'API est unifiée : /messages/utilisateur_actuel/cible (cible = nom d'utilisateur ou nom de groupe)
+            const res = await fetch(\`/messages/\${username}/\${targetName}\`);
             const messages = await res.json();
             
             if (res.ok && messages) {
@@ -278,6 +236,93 @@
     }
 
 
+    // --- GESTION DES CONTACTS ET GROUPES ---
+
+    function setActiveContact(targetName, isGroup = false) {
+        // 1. Réinitialiser le compteur
+        if (unreadCounts.hasOwnProperty(targetName)) {
+            unreadCounts[targetName] = 0;
+        }
+        updateContactList(lastOnlineList); 
+        loadAndDisplayGroups();
+        
+        // 2. Changer de contact
+        currentContact = targetName; 
+        isCurrentContactGroup = isGroup;
+        
+        document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+        
+        // Trouver et activer le contact/groupe dans le DOM
+        const targetEl = document.querySelector(`.contact[data-target-name="${targetName}"]`);
+        if(targetEl) targetEl.classList.add('active');
+        
+        loadMessages(targetName, isGroup); 
+    }
+
+    function updateContactList(list) {
+        lastOnlineList = list; // Sauvegarde la liste
+        usersListEl.innerHTML = "";
+        
+        // Initialise les compteurs pour les nouveaux utilisateurs
+        list.forEach(u => {
+            if (u !== username && !unreadCounts.hasOwnProperty(u)) {
+                unreadCounts[u] = 0;
+            }
+        });
+
+        // Affiche les utilisateurs en ligne
+        list.filter(u => u !== username).forEach(u => {
+            const div = document.createElement("div");
+            div.className = "contact" + (u === currentContact && !isCurrentContactGroup ? " active" : "");
+            div.setAttribute('data-target-name', u); // Pour le ciblage
+            
+            const count = unreadCounts[u] || 0;
+            let countHtml = count > 0 ? `<span class="unread-count">${count}</span>` : '';
+
+            div.innerHTML = `<span>${u}</span> ${countHtml}`;
+
+            div.onclick = () => { 
+                setActiveContact(u, false);
+            };
+            usersListEl.appendChild(div);
+        });
+    }
+
+    async function loadAndDisplayGroups() {
+        try {
+            const res = await fetch(`/groups/${username}`);
+            const groups = await res.json();
+            
+            groupsListEl.innerHTML = "";
+            
+            groups.forEach(group => {
+                const groupName = group.name;
+
+                // Initialise le compteur pour le groupe
+                if (!unreadCounts.hasOwnProperty(groupName)) {
+                    unreadCounts[groupName] = 0;
+                }
+
+                const div = document.createElement("div");
+                div.className = "contact" + (groupName === currentContact && isCurrentContactGroup ? " active" : "");
+                div.setAttribute('data-target-name', groupName); // Pour le ciblage
+                
+                const count = unreadCounts[groupName] || 0;
+                let countHtml = count > 0 ? `<span class="unread-count">${count}</span>` : '';
+
+                div.innerHTML = `<span>💬 ${groupName}</span> ${countHtml}`;
+
+                div.onclick = () => {
+                    setActiveContact(groupName, true);
+                };
+                groupsListEl.appendChild(div);
+            });
+
+        } catch (error) {
+            console.error("Erreur de chargement des groupes:", error);
+        }
+    }
+    
     // --- GESTION DE L'AUTHENTIFICATION ---
 
     switchAuth.onclick = () => {
@@ -302,76 +347,87 @@
       const data = await res.json();
       
       if (!data.success) {
-        // Affiche l'erreur venant du serveur (ex: nom d'utilisateur déjà pris)
         return alert(data.error || "Erreur d'authentification");
       }
       
       // Connexion/Inscription réussie
       username = user;
       authCard.style.display = "none";
-      appEl.style.display = "grid"; // Utilise grid pour le layout du chat
+      appEl.style.display = "grid"; 
       
-      // Enregistre l'utilisateur connecté sur le serveur Socket.IO
+      // Enregistre l'utilisateur connecté sur le serveur Socket.IO et rejoint les rooms
       socket.emit("registerUser", username);
+      await loadAndDisplayGroups(); // Charge les groupes existants
     };
 
-    // --- GESTION DES CONTACTS ---
+    // --- GESTION DES GROUPES ---
 
-    socket.on("onlineUsers", list => {
-      contactsEl.innerHTML = "<p style='text-align: center; color: #666; margin-top: 20px;'>Utilisateurs en ligne</p>";
-      
-      // Filtre l'utilisateur lui-même
-      list.filter(u => u !== username).forEach(u => {
-        const div = document.createElement("div");
-        div.className = "contact" + (u === currentContact ? " active" : "");
-        div.textContent = u;
-        
-        div.onclick = () => { 
-            // ⚠️ Nouvelle logique : Charger l'historique
-            currentContact = u; 
-            
-            // Mise à jour visuelle des contacts
-            document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
-            div.classList.add('active');
-            
-            loadMessages(u); 
-        };
-        contactsEl.appendChild(div);
-      });
-    });
+    createGroupBtn.onclick = async () => {
+        const groupName = prompt("Entrez le nom du nouveau salon de groupe:");
+        if (!groupName) return;
 
-    // --- GESTION DE L'ENVOI ET DE LA RÉCEPTION DES MESSAGES ---
+        try {
+            const res = await fetch("/createGroup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ groupName, creatorUsername: username })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert(`Groupe "${groupName}" créé avec succès !`);
+                await loadAndDisplayGroups(); // Rafraîchit les groupes
+                socket.emit('registerUser', username); // Demande au serveur de rejoindre la room
+                setActiveContact(groupName, true);
+            } else {
+                alert(`Erreur: ${data.error}`);
+            }
+        } catch (e) {
+            alert("Erreur de communication avec le serveur.");
+        }
+    };
+
+
+    // --- GESTION SOCKET.IO ---
+    
+    socket.on("onlineUsers", updateContactList); 
 
     sendBtn.onclick = () => {
-      if (!currentContact) return alert("Choisis un contact");
+      if (!currentContact) return alert("Choisis un contact ou un groupe");
       const text = msgInput.value.trim();
       if (!text) return;
       
-      // Le message inclut désormais l'horodatage côté client (peut être généré serveur aussi)
       const msg = { 
         from: username, 
         to: currentContact, 
         text, 
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString(),
+        isGroup: isCurrentContactGroup 
       };
       
-      // addMessage(msg); // Laissez le 'socket.on("receiveMessage")' gérer l'affichage pour simplifier la logique
       socket.emit("sendMessage", msg);
       msgInput.value = "";
     };
 
-    // Le serveur renvoie le message à l'émetteur et au destinataire
     socket.on("receiveMessage", msg => {
-        // Le code serveur gère déjà l'envoi uniquement aux deux parties
-        // Ici, on vérifie juste si c'est la conversation actuellement ouverte
-        if (msg.to === username && msg.from === currentContact || 
-            msg.from === username && msg.to === currentContact) {
-            
-            addMessage(msg);
+        // Détermine l'expéditeur/cible pour le compteur
+        const target = msg.isGroup ? msg.to : (msg.from === username ? msg.to : msg.from);
+        
+        // 1. GESTION DES NOTIFICATIONS DE NON-LUS
+        // Si le message est pour l'utilisateur (to == username ou isGroup) ET ne concerne pas la conversation active
+        if (target !== currentContact) {
+            if (unreadCounts.hasOwnProperty(target)) {
+                unreadCounts[target]++;
+            } else {
+                unreadCounts[target] = 1;
+            }
+            // Rafraîchir les listes pour afficher le badge
+            updateContactList(lastOnlineList);
+            loadAndDisplayGroups();
         }
         
-        // Si le message est pour moi mais que je suis sur un autre contact, je pourrais mettre une notification
-        // (Fonctionnalité future)
+        // 2. AFFICHAGE DANS LA FENÊTRE
+        addMessage(msg);
     });
 
   </script>
