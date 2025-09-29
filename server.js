@@ -1,71 +1,63 @@
 // server.js
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const fs = require("fs");
-const path = require("path");
+import express from "express";
+import { Server } from "socket.io";
+import { createServer } from "http";
+import fs from "fs";
+import path from "path";
+import bodyParser from "body-parser";
+import cors from "cors";
 
 const app = express();
-const server = http.createServer(app);
+const server = createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json());
-app.use(express.static(__dirname));
-
-// Fichier de base utilisateurs
-const USERS_FILE = path.join(__dirname, "users.json");
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static("."));
 
 // Charger les utilisateurs
-let users = [];
-if (fs.existsSync(USERS_FILE)) {
-  users = JSON.parse(fs.readFileSync(USERS_FILE));
-}
+const usersFile = path.join(process.cwd(), "users.json");
+if (!fs.existsSync(usersFile)) fs.writeFileSync(usersFile, JSON.stringify([]));
 
-// 🔐 Route d'inscription
-app.post("/register", (req, res) => {
+// 🔐 Route inscription
+app.post("/api/register", (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password)
-    return res.status(400).json({ message: "Champs manquants" });
+  const users = JSON.parse(fs.readFileSync(usersFile));
 
-  const exists = users.find((u) => u.username === username);
-  if (exists) return res.status(400).json({ message: "Utilisateur existant" });
+  if (users.find(u => u.username === username)) {
+    return res.status(400).json({ message: "Ce nom d'utilisateur existe déjà" });
+  }
 
   users.push({ username, password });
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+
   res.json({ message: "Inscription réussie" });
 });
 
-// 🔑 Route de connexion
-app.post("/login", (req, res) => {
+// 🔐 Route connexion
+app.post("/api/login", (req, res) => {
   const { username, password } = req.body;
-  const user = users.find(
-    (u) => u.username === username && u.password === password
-  );
-  if (!user) return res.status(401).json({ message: "Identifiants invalides" });
+  const users = JSON.parse(fs.readFileSync(usersFile));
+
+  const user = users.find(u => u.username === username && u.password === password);
+  if (!user) return res.status(401).json({ message: "Identifiants incorrects" });
 
   res.json({ message: "Connexion réussie" });
 });
 
-// 📡 Messagerie Socket.IO
+// 🔄 Gestion des messages Socket.IO
 io.on("connection", (socket) => {
-  console.log("✅ Utilisateur connecté");
+  console.log("Un utilisateur connecté");
 
-  socket.on("join", (username) => {
-    socket.username = username;
-    socket.broadcast.emit("system", `${username} a rejoint la discussion`);
+  socket.on("sendMessage", (data) => {
+    io.emit("receiveMessage", data);
   });
 
-  socket.on("message", (data) => {
-    io.emit("message", { from: socket.username, text: data.text });
-  });
-
-  socket.on("disconnect", () => {
-    if (socket.username)
-      socket.broadcast.emit("system", `${socket.username} s'est déconnecté`);
-  });
+  socket.on("disconnect", () => console.log("Utilisateur déconnecté"));
 });
 
-server.listen(PORT, () => console.log(`🚀 Serveur lancé sur le port ${PORT}`));
+// 🚀 Lancement du serveur
+server.listen(PORT, () => console.log(`Serveur en ligne sur le port ${PORT}`));
