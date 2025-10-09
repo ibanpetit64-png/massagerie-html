@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Messagerie Moderne</title>
+  <title>Messagerie Immersive</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -16,13 +16,13 @@
         --card-bg: #ffffff;
         --text-color: #1c1e21;
         --subtle-text: #606770;
-        --sidebar-bg: #f7f7f7;
-        --contact-hover: #eaf3ff;
+        --sidebar-bg: #ffffff; /* Clair */
+        --contact-hover: #f1f1f1;
         --active-contact: #e0f0ff;
         --main-brand: #007bff;
         --message-mine: #007bff;
         --message-other: #e4e6eb;
-        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.08);
         --border-color: #dddddd;
         --unread-bg: #f84d4d;
         --icon-color: #606770;
@@ -33,93 +33,62 @@
         --card-bg: #242526;
         --text-color: #e4e6eb;
         --subtle-text: #b0b3b8;
-        --sidebar-bg: #242526;
-        --contact-hover: #3a3b3c;
+        --sidebar-bg: #1f2022; /* Sombre */
+        --contact-hover: #2c2d2e;
         --active-contact: #3e5066;
         --main-brand: #3b82f6;
         --message-mine: #3b82f6;
         --message-other: #3a3b3c;
-        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.3);
         --border-color: #3e4042;
         --unread-bg: #e04e4e;
         --icon-color: #b0b3b8;
     }
 
     /* ---------------------------------- */
-    /* 2. Styles Généraux */
+    /* 2. Styles Généraux et Layout 100% */
     /* ---------------------------------- */
     * { box-sizing: border-box; }
-    body {
+    body, html {
         margin: 0;
+        padding: 0;
         font-family: 'Inter', sans-serif;
         background: var(--bg-color);
         color: var(--text-color);
-        height: 100vh;
+        width: 100vw;
+        height: 100vh; /* Utilisation de toute la hauteur */
         display: flex;
         justify-content: center;
         align-items: center;
         transition: background 0.3s, color 0.3s;
     }
-    
-    /* Boutons et Inputs */
-    .btn, .auth-btn {
-        padding: 10px 15px;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease-in-out;
-    }
-    .auth-btn {
-        width: 100%;
-        padding: 12px;
-        background: var(--main-brand);
-        color: white;
-        font-size: 18px;
-    }
-    .auth-btn:hover { background: #0069d9; }
 
-    /* Card d'Authentification */
+    /* Card d'Authentification (Centrée, style moderne) */
     #auth-card {
         width: 380px;
         background: var(--card-bg);
         border-radius: 16px;
         box-shadow: var(--shadow-light);
         padding: 30px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        z-index: 10;
+        /* Reste centré même quand l'app est affichée */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
-    .input-group { margin-bottom: 20px; width: 100%; }
-    .input-group label { display: block; font-weight: 600; margin-bottom: 5px; color: var(--subtle-text); }
-    .input-group input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        background: var(--card-bg);
-        color: var(--text-color);
-        font-size: 16px;
-        transition: border-color 0.3s;
-    }
-    .switch-auth { margin-top: 15px; font-size: 14px; color: var(--main-brand); cursor: pointer; }
-    .switch-auth:hover { text-decoration: underline; }
 
-    /* ---------------------------------- */
-    /* 3. Application de Chat */
-    /* ---------------------------------- */
+    /* Application de Messagerie (Plein écran) */
     #app {
-        display: none; 
-        width: 95%;
-        max-width: 1300px;
-        height: 90vh;
+        display: none; /* Caché par défaut */
+        width: 100%;
+        height: 100%;
         background: var(--card-bg);
-        border-radius: 20px;
-        box-shadow: var(--shadow-light);
         overflow: hidden;
-        grid-template-columns: 320px 1fr;
-        display: grid;
+        display: grid; 
+        grid-template-columns: minmax(280px, 20%) 1fr; /* Sidebar plus flexible */
     }
+
     /* Panneau de Contacts (Sidebar) */
     #contacts-panel {
         background: var(--sidebar-bg);
@@ -127,29 +96,22 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        padding-bottom: 20px;
+        padding-bottom: 10px;
     }
     #sidebar-header {
+        position: sticky;
+        top: 0;
         padding: 15px 20px;
         border-bottom: 1px solid var(--border-color);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: var(--card-bg);
+        background: var(--sidebar-bg);
+        z-index: 5;
     }
     #user-profile { font-weight: 700; font-size: 1.1em; }
-    #options-menu {
-        display: flex;
-        gap: 10px;
-    }
-    .icon-btn {
-        background: transparent;
-        border: none;
-        color: var(--icon-color);
-        font-size: 1.2em;
-        cursor: pointer;
-        transition: color 0.2s;
-    }
+    #options-menu { display: flex; gap: 10px; }
+    .icon-btn { background: transparent; border: none; color: var(--icon-color); font-size: 1.2em; cursor: pointer; transition: color 0.2s; }
     .icon-btn:hover { color: var(--main-brand); }
     
     .section-title {
@@ -158,14 +120,14 @@
         font-size: 0.85em;
         font-weight: 600;
         padding: 10px 20px 5px;
-        margin-top: 15px;
+        margin-top: 5px;
         border-bottom: 1px solid var(--border-color);
     }
     .contact-container { padding: 0 5px; }
 
     .contact {
         padding: 12px 15px;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
         cursor: pointer;
         font-weight: 500;
         border-radius: 8px;
@@ -177,9 +139,6 @@
     .contact:hover { background: var(--contact-hover); }
     .contact.active { background: var(--active-contact); color: var(--main-brand); font-weight: 600;}
     
-    .contact-info span:first-child { font-size: 1em; }
-    .contact-info span:last-child { color: var(--subtle-text); font-size: 0.8em; margin-left: 5px; }
-
     .unread-count {
         background: var(--unread-bg);
         color: white;
@@ -189,10 +148,9 @@
         line-height: 1;
         font-weight: 700;
     }
-    .contact.active .unread-count { background: white; color: var(--unread-bg); }
 
-    /* Fenêtre de Chat */
-    #chat-window { display: flex; flex-direction: column; }
+    /* Fenêtre de Chat (prend l'espace restant) */
+    #chat-window { display: flex; flex-direction: column; height: 100%; }
     #current-contact-header {
         padding: 20px;
         border-bottom: 1px solid var(--border-color);
@@ -200,6 +158,9 @@
         font-weight: bold;
         background: var(--card-bg);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 5;
     }
     #messages {
         flex-grow: 1;
@@ -207,32 +168,19 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        background: var(--bg-color); /* Utilise la couleur de fond générale pour le corps du chat */
     }
     #input-area {
         display: flex;
         padding: 15px;
         border-top: 1px solid var(--border-color);
         background: var(--card-bg);
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
     }
-    #msg-input {
-        flex-grow: 1;
-        padding: 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 20px;
-        margin-right: 10px;
-        font-size: 16px;
-        background: var(--card-bg);
-        color: var(--text-color);
-    }
-    #send-btn {
-        background: var(--main-brand);
-        color: white;
-        font-weight: bold;
-        border-radius: 20px;
-    }
-    #send-btn:hover { background: #0069d9; }
-
-    /* Bulles de Message */
+    
+    /* Styles de bulles (inchangés mais intégrés au thème) */
     .message {
         max-width: 65%;
         padding: 10px 15px;
@@ -242,29 +190,23 @@
         word-wrap: break-word;
         box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
     }
-    .message.mine {
-        align-self: flex-end;
-        background: var(--message-mine);
-        color: white;
-        border-bottom-right-radius: 4px;
-    }
-    .message.other {
-        align-self: flex-start;
-        background: var(--message-other);
-        color: var(--text-color);
-        border-bottom-left-radius: 4px;
-    }
-    .message-info {
-        font-size: 0.7em;
-        margin-top: 5px;
-        opacity: 0.7;
-        text-align: right;
-        color: inherit;
-    }
-    .message.other .message-info { text-align: left; }
-    
-    /* Indicateur de groupe dans la bulle */
+    .message.mine { align-self: flex-end; background: var(--message-mine); color: white; border-bottom-right-radius: 4px; }
+    .message.other { align-self: flex-start; background: var(--message-other); color: var(--text-color); border-bottom-left-radius: 4px; }
+    .message-info { font-size: 0.7em; margin-top: 5px; opacity: 0.7; text-align: right; color: inherit; }
     .message-sender { font-weight: 700; font-size: 0.85em; margin-bottom: 3px; }
+
+    /* AUTH INPUTS (Rendus plus propres) */
+    .input-group input {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        padding: 12px;
+        font-size: 16px;
+    }
+    .auth-btn { background: var(--main-brand); color: white; }
+    .auth-btn:hover { background: #0069d9; }
+
 
   </style>
 </head>
@@ -318,7 +260,7 @@
 
   <script>
     // --- VARIABLES GLOBALES ---
-    const socket = io();
+    const socket = io(); // Se connecte au même hôte que la page est servie (fonctionne avec Render)
     let isLogin = true;
     let username = "";
     let currentContact = null;
@@ -345,7 +287,7 @@
     const themeToggleBtn = document.getElementById("theme-toggle");
     const logoutBtn = document.getElementById("logout-btn");
 
-    // --- LOGIQUE D'INTERFACE ET UTILITAIRES ---
+    // --- LOGIQUE D'INTERFACE ET UTILITAIRES (inchangés, mais s'adaptent au nouveau DOM) ---
 
     function formatTime(date) {
         if (!date) return '';
@@ -515,8 +457,11 @@
       }
       
       username = user;
+      
+      // Cache la carte d'auth et affiche l'application
       authCard.style.display = "none";
       appEl.style.display = "grid"; 
+      
       userProfileEl.textContent = `Bienvenue, ${username}`; 
       
       socket.connect(); 
