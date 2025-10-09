@@ -1,63 +1,61 @@
 const socket = io();
+const body = document.body;
 
-// --- Auth ---
-const authDiv = document.getElementById("auth");
-const registerDiv = document.getElementById("register");
-const chatDiv = document.getElementById("chat");
-const userDisplay = document.getElementById("userDisplay");
+// Auth
+const authSection = document.getElementById("authSection");
+const chatSection = document.getElementById("chatSection");
 
-document.getElementById("showRegister").onclick = () => {
-  authDiv.style.display = "none";
-  registerDiv.style.display = "block";
+document.getElementById("goRegister").onclick = () => {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("register").style.display = "block";
 };
 
-document.getElementById("showLogin").onclick = () => {
-  registerDiv.style.display = "none";
-  authDiv.style.display = "block";
+document.getElementById("goLogin").onclick = () => {
+  document.getElementById("register").style.display = "none";
+  document.getElementById("login").style.display = "block";
 };
 
 document.getElementById("registerBtn").onclick = async () => {
-  const username = document.getElementById("regUsername").value.trim();
-  const password = document.getElementById("regPassword").value.trim();
+  const username = document.getElementById("regUsername").value;
+  const password = document.getElementById("regPassword").value;
   const res = await fetch("/api/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ username, password }),
   });
   const data = await res.json();
   alert(data.message);
   if (res.ok) {
-    registerDiv.style.display = "none";
-    authDiv.style.display = "block";
+    document.getElementById("register").style.display = "none";
+    document.getElementById("login").style.display = "block";
   }
 };
 
 document.getElementById("loginBtn").onclick = async () => {
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
   const res = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ username, password }),
   });
   const data = await res.json();
   if (!res.ok) return alert(data.message);
 
-  userDisplay.textContent = username;
-  authDiv.style.display = "none";
-  chatDiv.style.display = "block";
   window.username = username;
+  authSection.style.display = "none";
+  chatSection.style.display = "grid";
 };
 
-// --- Chat ---
-const messagesDiv = document.getElementById("messages");
+// Chat
 const msgInput = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
+const messagesDiv = document.getElementById("messages");
 
 sendBtn.onclick = () => {
-  const msg = msgInput.value.trim();
-  if (!msg) return;
-  socket.emit("sendMessage", { user: window.username, text: msg });
+  const text = msgInput.value.trim();
+  if (!text) return;
+  socket.emit("sendMessage", { user: window.username, text });
   msgInput.value = "";
 };
 
@@ -68,3 +66,18 @@ socket.on("receiveMessage", ({ user, text }) => {
   messagesDiv.appendChild(div);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
+
+// Ajouter contact
+document.getElementById("addContactBtn").onclick = () => {
+  const name = document.getElementById("newContact").value.trim();
+  if (!name) return;
+  const li = document.createElement("li");
+  li.textContent = name;
+  document.getElementById("contactList").appendChild(li);
+  document.getElementById("newContact").value = "";
+};
+
+// Mode clair/sombre
+document.getElementById("toggleTheme").onclick = () => {
+  body.classList.toggle("light");
+};
