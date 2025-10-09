@@ -1,0 +1,6 @@
+git init
+git add .
+git commit -m "Messagerie initiale"
+git branch -M main
+git remote add origin https://github.com/<ton-nom-utilisateur>/messagerie-app.git
+git push -u origin main
