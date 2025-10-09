@@ -1,1 +1,142 @@
+:root {
+  --bg: #111;
+  --text: #fff;
+  --accent: #007bff;
+  --card: #1c1c1c;
+}
 
+body.light {
+  --bg: #f1f1f1;
+  --text: #000;
+  --card: #fff;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  height: 100vh;
+  transition: 0.3s;
+}
+
+.container {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 900px;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--accent);
+  padding: 10px 20px;
+  color: #fff;
+}
+
+#chatSection {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  height: 100%;
+}
+
+#contacts {
+  background: #0e0e0e;
+  padding: 15px;
+  border-right: 1px solid #333;
+}
+
+#contacts h3 {
+  margin-top: 0;
+}
+
+#contactList {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#contactList li {
+  padding: 10px;
+  margin-bottom: 5px;
+  background: #222;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.add-contact {
+  display: flex;
+  gap: 5px;
+}
+
+#chatMain {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  background: #151515;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.message {
+  margin: 8px 0;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 70%;
+}
+
+.self {
+  background: var(--accent);
+  align-self: flex-end;
+  text-align: right;
+  color: #fff;
+}
+
+.other {
+  background: #333;
+  align-self: flex-start;
+}
+
+#composer {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+input, button {
+  font-family: inherit;
+}
+
+input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: var(--text);
+}
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+}
