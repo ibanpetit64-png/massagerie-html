@@ -1,59 +1,28 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Messagerie</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messagerie</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <div id="auth">
-    <h1>Connexion</h1>
-    <input id="loginUser" placeholder="Nom d'utilisateur">
-    <input id="loginPass" type="password" placeholder="Mot de passe">
-    <button id="loginBtn">Connexion</button>
-
-    <p>Pas de compte ? <a id="goRegister">Créer un compte</a></p>
-
-    <div id="register" style="display:none;">
-      <h1>Inscription</h1>
-      <input id="regUser" placeholder="Nom d'utilisateur">
-      <input id="regPass" type="password" placeholder="Mot de passe">
-      <button id="regBtn">Créer le compte</button>
-      <p>Déjà un compte ? <a id="goLogin">Connexion</a></p>
+    <div id="app">
+        <h1>Bienvenue dans la messagerie</h1>
+        <div id="login-section">
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Mot de passe">
+            <button id="login-btn">Se connecter</button>
+            <button id="register-btn">S'inscrire</button>
+            <p id="login-error"></p>
+        </div>
+        <div id="chat-section" style="display:none;">
+            <div id="chat-window"></div>
+            <input type="text" id="message-input" placeholder="Écrire un message...">
+            <button id="send-btn">Envoyer</button>
+            <button id="logout-btn">Se déconnecter</button>
+        </div>
     </div>
-  </div>
-
-  <div id="app" style="display:none;">
-    <aside id="contacts">
-      <h2>Contacts</h2>
-      <ul id="contactList"></ul>
-
-      <div class="addContactBox">
-        <input id="addContactInput" placeholder="Ajouter un contact">
-        <button id="addContactBtn">+</button>
-      </div>
-
-      <button id="logout">Déconnexion</button>
-    </aside>
-
-    <main>
-      <header>
-        <h2 id="currentChat">Aucun contact</h2>
-        <button id="toggleTheme">🌙</button>
-      </header>
-
-      <div id="messages"></div>
-
-      <div id="sendBox">
-        <input id="msgInput" placeholder="Écrire un message...">
-        <button id="sendBtn">Envoyer</button>
-      </div>
-    </main>
-  </div>
-
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
