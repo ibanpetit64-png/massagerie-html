@@ -1,54 +1,25 @@
-import express from "express";
-import { createServer } from "http";
-import { Server } from "socket.io";
-import fs from "fs";
-import bodyParser from "body-parser";
-import path from "path";
-
+const express = require("express");
+const fs = require("fs");
 const app = express();
-const server = createServer(app);
-const io = new Server(server);
+const PORT = 3000;
 
-app.use(bodyParser.json());
 app.use(express.static("."));
+app.use(express.json());
 
-const usersPath = "./users.json";
-
-if (!fs.existsSync(usersPath)) fs.writeFileSync(usersPath, "[]");
-
-// INSCRIPTION
-app.post("/api/register", (req, res) => {
-  let users = JSON.parse(fs.readFileSync(usersPath));
-  let { username, password } = req.body;
-
-  if (users.find(u => u.username === username)) {
-    return res.status(400).json({ message: "Utilisateur déjà existant" });
-  }
-
-  users.push({ username, password });
-  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
-
-  res.json({ message: "Compte créé !" });
+// Endpoint pour récupérer les utilisateurs
+app.get("/users.json", (req, res) => {
+    fs.readFile("users.json", "utf8", (err, data) => {
+        if(err) return res.status(500).send("Erreur serveur");
+        res.send(data);
+    });
 });
 
-// CONNEXION
-app.post("/api/login", (req, res) => {
-  let users = JSON.parse(fs.readFileSync(usersPath));
-  let { username, password } = req.body;
-
-  let user = users.find(u => u.username === username && u.password === password);
-
-  if (!user) return res.status(401).json({ message: "Identifiants incorrects" });
-
-  res.json({ message: "Connexion réussie" });
+// Endpoint pour mettre à jour les utilisateurs
+app.put("/users.json", (req, res) => {
+    fs.writeFile("users.json", JSON.stringify(req.body, null, 2), err => {
+        if(err) return res.status(500).send("Erreur serveur");
+        res.send({status:"ok"});
+    });
 });
 
-// SOCKET.IO
-io.on("connection", socket => {
-  socket.on("sendMessage", msg => {
-    io.emit("receiveMessage", msg);
-  });
-});
-
-server.listen(3000, () => console.log("Serveur lancé sur http://localhost:3000"));
-
+app.listen(PORT, () => console.log(`Serveur démarré sur http://localhost:${PORT}`));
