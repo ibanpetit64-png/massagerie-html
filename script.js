@@ -1,107 +1,67 @@
-const socket = io();
+const loginSection = document.getElementById("login-section");
+const chatSection = document.getElementById("chat-section");
+const loginBtn = document.getElementById("login-btn");
+const registerBtn = document.getElementById("register-btn");
+const logoutBtn = document.getElementById("logout-btn");
+const sendBtn = document.getElementById("send-btn");
+const messageInput = document.getElementById("message-input");
+const chatWindow = document.getElementById("chat-window");
+const loginError = document.getElementById("login-error");
+
 let currentUser = null;
-let currentChat = null;
 
-const auth = document.getElementById("auth");
-const app = document.getElementById("app");
-
-// NAVIGATION LOGIN ⇄ REGISTER
-document.getElementById("goRegister").onclick = () => {
-  document.getElementById("register").style.display = "block";
-};
-
-document.getElementById("goLogin").onclick = () => {
-  document.getElementById("register").style.display = "none";
-};
-
-// INSCRIPTION
-document.getElementById("regBtn").onclick = async () => {
-  let username = document.getElementById("regUser").value;
-  let password = document.getElementById("regPass").value;
-
-  let res = await fetch("/api/register", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ username, password })
-  });
-
-  let data = await res.json();
-  alert(data.message);
-};
-
-// CONNEXION
-document.getElementById("loginBtn").onclick = async () => {
-  let username = document.getElementById("loginUser").value;
-  let password = document.getElementById("loginPass").value;
-
-  let res = await fetch("/api/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ username, password })
-  });
-
-  let data = await res.json();
-  if (!res.ok) return alert(data.message);
-
-  currentUser = username;
-  auth.style.display = "none";
-  app.style.display = "flex";
-};
-
-// AJOUT CONTACT
-document.getElementById("addContactBtn").onclick = () => {
-  const contact = document.getElementById("addContactInput").value;
-  if (!contact) return;
-
-  let li = document.createElement("li");
-  li.innerText = contact;
-  li.onclick = () => openChat(contact);
-
-  document.getElementById("contactList").appendChild(li);
-  document.getElementById("addContactInput").value = "";
-};
-
-// OUVERTURE D’UNE CONVERSATION
-function openChat(name) {
-  currentChat = name;
-  document.getElementById("currentChat").innerText = name;
-
-  document.querySelectorAll("#contactList li").forEach(li => li.classList.remove("active"));
-  event.target.classList.add("active");
-
-  document.getElementById("messages").innerHTML = "";
+// Charger les utilisateurs depuis users.json
+async function getUsers() {
+    const res = await fetch("users.json");
+    return await res.json();
 }
 
-// ENVOI MESSAGE
-document.getElementById("sendBtn").onclick = () => {
-  if (!currentChat) return alert("Choisis un contact !");
-  const text = document.getElementById("msgInput").value;
-
-  socket.emit("sendMessage", {
-    from: currentUser,
-    to: currentChat,
-    text
-  });
-
-  document.getElementById("msgInput").value = "";
-};
-
-// RÉCEPTION MESSAGE
-socket.on("receiveMessage", msg => {
-  if (msg.to !== currentUser && msg.from !== currentUser) return;
-
-  const div = document.createElement("div");
-  div.className = "message " + (msg.from === currentUser ? "self" : "other");
-  div.innerText = `${msg.from}: ${msg.text}`;
-  document.getElementById("messages").appendChild(div);
+// Se connecter
+loginBtn.addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const users = await getUsers();
+    const user = users.find(u => u.email === email && u.password === password);
+    if(user) {
+        currentUser = user;
+        loginSection.style.display = "none";
+        chatSection.style.display = "block";
+        loginError.textContent = "";
+    } else {
+        loginError.textContent = "Email ou mot de passe incorrect";
+    }
 });
 
-// THEME
-document.getElementById("toggleTheme").onclick = () => {
-  document.body.classList.toggle("light");
-};
+// S'inscrire
+registerBtn.addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const users = await getUsers();
+    if(users.find(u => u.email === email)) {
+        loginError.textContent = "Utilisateur déjà existant";
+        return;
+    }
+    users.push({email, password});
+    await fetch("users.json", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(users)
+    });
+    loginError.textContent = "Utilisateur créé, vous pouvez vous connecter";
+});
 
-// DECONNEXION
-document.getElementById("logout").onclick = () => {
-  location.reload();
-};
+// Envoyer un message
+sendBtn.addEventListener("click", () => {
+    if(messageInput.value.trim() === "") return;
+    const msg = document.createElement("p");
+    msg.textContent = `${currentUser.email}: ${messageInput.value}`;
+    chatWindow.appendChild(msg);
+    messageInput.value = "";
+});
+
+// Déconnexion
+logoutBtn.addEventListener("click", () => {
+    currentUser = null;
+    chatSection.style.display = "none";
+    loginSection.style.display = "block";
+});
