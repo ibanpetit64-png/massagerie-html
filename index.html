@@ -1,28 +1,538 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messagerie</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messagerie Immersive</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ---------------------------------- */
+    /* 1. Variables de Thèmes (Clair/Sombre) */
+    /* ---------------------------------- */
+    :root {
+        /* Mode Clair (Par défaut) */
+        --bg-color: #f0f2f5;
+        --card-bg: #ffffff;
+        --text-color: #1c1e21;
+        --subtle-text: #606770;
+        --sidebar-bg: #ffffff; /* Clair */
+        --contact-hover: #f1f1f1;
+        --active-contact: #e0f0ff;
+        --main-brand: #007bff;
+        --message-mine: #007bff;
+        --message-other: #e4e6eb;
+        --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.08);
+        --border-color: #dddddd;
+        --unread-bg: #f84d4d;
+        --icon-color: #606770;
+    }
+    [data-theme="dark"] {
+        /* Mode Sombre */
+        --bg-color: #18191a;
+        --card-bg: #242526;
+        --text-color: #e4e6eb;
+        --subtle-text: #b0b3b8;
+        --sidebar-bg: #1f2022; /* Sombre */
+        --contact-hover: #2c2d2e;
+        --active-contact: #3e5066;
+        --main-brand: #3b82f6;
+        --message-mine: #3b82f6;
+        --message-other: #3a3b3c;
+        --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.3);
+        --border-color: #3e4042;
+        --unread-bg: #e04e4e;
+        --icon-color: #b0b3b8;
+    }
+
+    /* ---------------------------------- */
+    /* 2. Styles Généraux et Layout 100% */
+    /* ---------------------------------- */
+    * { box-sizing: border-box; }
+    body, html {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-color);
+        color: var(--text-color);
+        width: 100vw;
+        height: 100vh; /* Utilisation de toute la hauteur */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background 0.3s, color 0.3s;
+    }
+
+    /* Card d'Authentification (Centrée, style moderne) */
+    #auth-card {
+        width: 380px;
+        background: var(--card-bg);
+        border-radius: 16px;
+        box-shadow: var(--shadow-light);
+        padding: 30px;
+        z-index: 10;
+        /* Reste centré même quand l'app est affichée */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    /* Application de Messagerie (Plein écran) */
+    #app {
+        display: none; /* Caché par défaut */
+        width: 100%;
+        height: 100%;
+        background: var(--card-bg);
+        overflow: hidden;
+        display: grid; 
+        grid-template-columns: minmax(280px, 20%) 1fr; /* Sidebar plus flexible */
+    }
+
+    /* Panneau de Contacts (Sidebar) */
+    #contacts-panel {
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--border-color);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 10px;
+    }
+    #sidebar-header {
+        position: sticky;
+        top: 0;
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--sidebar-bg);
+        z-index: 5;
+    }
+    #user-profile { font-weight: 700; font-size: 1.1em; }
+    #options-menu { display: flex; gap: 10px; }
+    .icon-btn { background: transparent; border: none; color: var(--icon-color); font-size: 1.2em; cursor: pointer; transition: color 0.2s; }
+    .icon-btn:hover { color: var(--main-brand); }
+    
+    .section-title {
+        text-align: left;
+        color: var(--subtle-text);
+        font-size: 0.85em;
+        font-weight: 600;
+        padding: 10px 20px 5px;
+        margin-top: 5px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .contact-container { padding: 0 5px; }
+
+    .contact {
+        padding: 12px 15px;
+        margin-bottom: 2px;
+        cursor: pointer;
+        font-weight: 500;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+    .contact:hover { background: var(--contact-hover); }
+    .contact.active { background: var(--active-contact); color: var(--main-brand); font-weight: 600;}
+    
+    .unread-count {
+        background: var(--unread-bg);
+        color: white;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        line-height: 1;
+        font-weight: 700;
+    }
+
+    /* Fenêtre de Chat (prend l'espace restant) */
+    #chat-window { display: flex; flex-direction: column; height: 100%; }
+    #current-contact-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 1.2em;
+        font-weight: bold;
+        background: var(--card-bg);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+    #messages {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-color); /* Utilise la couleur de fond générale pour le corps du chat */
+    }
+    #input-area {
+        display: flex;
+        padding: 15px;
+        border-top: 1px solid var(--border-color);
+        background: var(--card-bg);
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+    }
+    
+    /* Styles de bulles (inchangés mais intégrés au thème) */
+    .message {
+        max-width: 65%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        line-height: 1.4;
+        word-wrap: break-word;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    }
+    .message.mine { align-self: flex-end; background: var(--message-mine); color: white; border-bottom-right-radius: 4px; }
+    .message.other { align-self: flex-start; background: var(--message-other); color: var(--text-color); border-bottom-left-radius: 4px; }
+    .message-info { font-size: 0.7em; margin-top: 5px; opacity: 0.7; text-align: right; color: inherit; }
+    .message-sender { font-weight: 700; font-size: 0.85em; margin-bottom: 3px; }
+
+    /* AUTH INPUTS (Rendus plus propres) */
+    .input-group input {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        padding: 12px;
+        font-size: 16px;
+    }
+    .auth-btn { background: var(--main-brand); color: white; }
+    .auth-btn:hover { background: #0069d9; }
+
+
+  </style>
 </head>
 <body>
-    <div id="app">
-        <h1>Bienvenue dans la messagerie</h1>
-        <div id="login-section">
-            <input type="email" id="email" placeholder="Email">
-            <input type="password" id="password" placeholder="Mot de passe">
-            <button id="login-btn">Se connecter</button>
-            <button id="register-btn">S'inscrire</button>
-            <p id="login-error"></p>
-        </div>
-        <div id="chat-section" style="display:none;">
-            <div id="chat-window"></div>
-            <input type="text" id="message-input" placeholder="Écrire un message...">
-            <button id="send-btn">Envoyer</button>
-            <button id="logout-btn">Se déconnecter</button>
-        </div>
+
+  <div id="auth-card">
+    <h2 id="auth-title" style="color: var(--text-color);">Bienvenue</h2>
+    <div class="input-group">
+      <label for="username-input">Nom d'utilisateur</label>
+      <input type="text" id="username-input" placeholder="Entrez votre nom" />
     </div>
-    <script src="script.js"></script>
+    <div class="input-group">
+      <label for="password-input">Mot de passe</label>
+      <input type="password" id="password-input" placeholder="Entrez votre mot de passe" />
+    </div>
+    <button id="auth-btn" class="auth-btn">Se connecter</button>
+    <p id="switch-auth" class="switch-auth">Pas de compte ? S'inscrire</p>
+  </div>
+
+  <div id="app">
+    <div id="contacts-panel">
+        <div id="sidebar-header">
+            <span id="user-profile"></span>
+            <div id="options-menu">
+                <button id="create-group-btn" class="icon-btn" title="Créer un groupe">👥</button>
+                <button id="theme-toggle" class="icon-btn" title="Mode Sombre/Clair">💡</button>
+                <button id="logout-btn" class="icon-btn" title="Déconnexion">🚪</button>
+            </div>
+        </div>
+
+        <p class="section-title">SALONS DE GROUPE</p>
+        <div id="groups-list" class="contact-container">
+            </div>
+
+        <p class="section-title">UTILISATEURS EN LIGNE</p>
+        <div id="users-list" class="contact-container">
+            </div>
+    </div>
+    <div id="chat-window">
+      <div id="current-contact-header">
+        <span id="contact-name">Sélectionnez un contact ou un groupe</span>
+      </div>
+      <div id="messages">
+        </div>
+      <div id="input-area">
+        <input type="text" id="msg-input" placeholder="Tapez votre message..." />
+        <button id="send-btn" class="btn">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- VARIABLES GLOBALES ---
+    const socket = io(); // Se connecte au même hôte que la page est servie (fonctionne avec Render)
+    let isLogin = true;
+    let username = "";
+    let currentContact = null;
+    let isCurrentContactGroup = false;
+    let unreadCounts = {}; 
+    let lastOnlineList = []; 
+
+    // --- ÉLÉMENTS DU DOM ---
+    const authCard = document.getElementById("auth-card");
+    const authTitle = document.getElementById("auth-title");
+    const switchAuth = document.getElementById("switch-auth");
+    const usernameInput = document.getElementById("username-input");
+    const passwordInput = document.getElementById("password-input");
+    const authBtn = document.getElementById("auth-btn");
+    const appEl = document.getElementById("app");
+    const messagesEl = document.getElementById("messages");
+    const msgInput = document.getElementById("msg-input");
+    const sendBtn = document.getElementById("send-btn");
+    const contactNameEl = document.getElementById("contact-name");
+    const userProfileEl = document.getElementById("user-profile");
+    const createGroupBtn = document.getElementById("create-group-btn");
+    const groupsListEl = document.getElementById("groups-list");
+    const usersListEl = document.getElementById("users-list");
+    const themeToggleBtn = document.getElementById("theme-toggle");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    // --- LOGIQUE D'INTERFACE ET UTILITAIRES (inchangés, mais s'adaptent au nouveau DOM) ---
+
+    function formatTime(date) {
+        if (!date) return '';
+        return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // 💡 GESTION DU THÈME
+    themeToggleBtn.onclick = () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        themeToggleBtn.textContent = newTheme === 'dark' ? '☀️' : '💡';
+    };
+    const storedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', storedTheme);
+    themeToggleBtn.textContent = storedTheme === 'dark' ? '☀️' : '💡';
+    
+    // 🚪 LOGOUT
+    logoutBtn.onclick = () => {
+        if (confirm("Voulez-vous vraiment vous déconnecter ?")) {
+            username = "";
+            currentContact = null;
+            unreadCounts = {};
+            lastOnlineList = [];
+            socket.disconnect(); 
+            window.location.reload(); 
+        }
+    };
+    
+    function addMessage(msg) {
+        const relevant = isCurrentContactGroup 
+            ? msg.to === currentContact 
+            : (msg.to === username && msg.from === currentContact) || (msg.from === username && msg.to === currentContact);
+
+        if (!relevant) return; 
+
+        const div = document.createElement("div");
+        div.className = "message " + (msg.from === username ? "mine" : "other");
+        
+        let senderInfo = '';
+        if (msg.isGroup && msg.from !== username) {
+            senderInfo = `<div class="message-sender" style="color:${document.documentElement.getAttribute('data-theme') === 'dark' ? '#93c5fd' : '#1d4ed8'};">${msg.from}</div>`;
+        }
+
+        div.innerHTML = `
+            ${senderInfo}
+            ${msg.text}
+            <div class="message-info">${formatTime(msg.timestamp)}</div>
+        `;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function loadMessages(targetName, isGroup) {
+        messagesEl.innerHTML = "";
+        contactNameEl.textContent = isGroup ? `${targetName} (Groupe)` : targetName;
+        currentContact = targetName;
+        isCurrentContactGroup = isGroup;
+
+        try {
+            const res = await fetch(\`/messages/\${username}/\${targetName}\`);
+            const messages = await res.json();
+            
+            if (res.ok && messages) {
+                messages.forEach(addMessage);
+            }
+        } catch (error) {
+            console.error("Erreur de chargement de l'historique:", error);
+        }
+    }
+
+
+    // --- GESTION DES CONTACTS ET GROUPES ---
+
+    function setActiveContact(targetName, isGroup = false) {
+        if (unreadCounts.hasOwnProperty(targetName)) { unreadCounts[targetName] = 0; }
+        updateContactList(lastOnlineList); 
+        loadAndDisplayGroups();
+        
+        currentContact = targetName; 
+        isCurrentContactGroup = isGroup;
+        
+        document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+        const targetEl = document.querySelector(`.contact[data-target-name="${targetName}"]`);
+        if(targetEl) targetEl.classList.add('active');
+        
+        loadMessages(targetName, isGroup); 
+    }
+
+    function updateContactList(list) {
+        lastOnlineList = list;
+        usersListEl.innerHTML = "";
+        
+        list.forEach(u => {
+            if (u !== username && !unreadCounts.hasOwnProperty(u)) { unreadCounts[u] = 0; }
+        });
+
+        list.filter(u => u !== username).forEach(u => {
+            const div = document.createElement("div");
+            div.className = "contact" + (u === currentContact && !isCurrentContactGroup ? " active" : "");
+            div.setAttribute('data-target-name', u);
+            
+            const count = unreadCounts[u] || 0;
+            let countHtml = count > 0 ? `<span class="unread-count">${count}</span>` : '';
+
+            div.innerHTML = `<div class="contact-info"><span>👤 ${u}</span></div> ${countHtml}`;
+            div.onclick = () => { setActiveContact(u, false); };
+            usersListEl.appendChild(div);
+        });
+    }
+
+    async function loadAndDisplayGroups() {
+        try {
+            const res = await fetch(`/groups/${username}`);
+            const groups = await res.json();
+            
+            groupsListEl.innerHTML = "";
+            
+            groups.forEach(group => {
+                const groupName = group.name;
+
+                if (!unreadCounts.hasOwnProperty(groupName)) { unreadCounts[groupName] = 0; }
+
+                const div = document.createElement("div");
+                div.className = "contact" + (groupName === currentContact && isCurrentContactGroup ? " active" : "");
+                div.setAttribute('data-target-name', groupName);
+                
+                const count = unreadCounts[groupName] || 0;
+                let countHtml = count > 0 ? `<span class="unread-count">${count}</span>` : '';
+
+                div.innerHTML = `<div class="contact-info"><span>💬 ${groupName}</span></div> ${countHtml}`;
+                div.onclick = () => { setActiveContact(groupName, true); };
+                groupsListEl.appendChild(div);
+            });
+
+        } catch (error) {
+            console.error("Erreur de chargement des groupes:", error);
+        }
+    }
+    
+    // --- GESTION DE L'AUTHENTIFICATION ---
+
+    switchAuth.onclick = () => {
+      isLogin = !isLogin;
+      authTitle.textContent = isLogin ? "Connexion" : "Inscription";
+      authBtn.textContent = isLogin ? "Se connecter" : "S'inscrire";
+      switchAuth.textContent = isLogin ? "Pas de compte ? S'inscrire" : "Déjà un compte ? Se connecter";
+    };
+
+    authBtn.onclick = async () => {
+      const user = usernameInput.value.trim();
+      const pass = passwordInput.value.trim();
+      if (!user || !pass) return alert("Veuillez remplir tous les champs.");
+
+      const endpoint = isLogin ? "/login" : "/signup";
+      
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: user, password: pass })
+      });
+      const data = await res.json();
+      
+      if (!data.success) {
+        return alert(data.error || "Erreur d'authentification");
+      }
+      
+      username = user;
+      
+      // Cache la carte d'auth et affiche l'application
+      authCard.style.display = "none";
+      appEl.style.display = "grid"; 
+      
+      userProfileEl.textContent = `Bienvenue, ${username}`; 
+      
+      socket.connect(); 
+      socket.emit("registerUser", username);
+      await loadAndDisplayGroups();
+    };
+
+    // --- GESTION SOCKET.IO ET ACTIONS ---
+    
+    createGroupBtn.onclick = async () => {
+        const groupName = prompt("Entrez le nom du nouveau salon de groupe:");
+        if (!groupName || groupName.length < 3) return alert("Nom invalide.");
+
+        try {
+            const res = await fetch("/createGroup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ groupName, creatorUsername: username })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert(`Groupe "${groupName}" créé avec succès !`);
+                await loadAndDisplayGroups();
+                socket.emit('registerUser', username); 
+                setActiveContact(groupName, true);
+            } else {
+                alert(`Erreur: ${data.error}`);
+            }
+        } catch (e) {
+            alert("Erreur de communication avec le serveur.");
+        }
+    };
+
+    socket.on("onlineUsers", updateContactList); 
+
+    sendBtn.onclick = () => {
+      if (!currentContact) return alert("Choisis un contact ou un groupe");
+      const text = msgInput.value.trim();
+      if (!text) return;
+      
+      const msg = { 
+        from: username, 
+        to: currentContact, 
+        text, 
+        timestamp: new Date().toISOString(),
+        isGroup: isCurrentContactGroup 
+      };
+      
+      socket.emit("sendMessage", msg);
+      msgInput.value = "";
+    };
+
+    socket.on("receiveMessage", msg => {
+        const target = msg.isGroup ? msg.to : (msg.from === username ? msg.to : msg.from);
+        
+        // GESTION DES NOTIFICATIONS DE NON-LUS
+        if (target !== currentContact) {
+            if (unreadCounts.hasOwnProperty(target)) {
+                unreadCounts[target]++;
+            } else {
+                unreadCounts[target] = 1;
+            }
+            updateContactList(lastOnlineList);
+            loadAndDisplayGroups();
+        }
+        
+        // AFFICHAGE DANS LA FENÊTRE
+        addMessage(msg);
+    });
+
+  </script>
 </body>
 </html>
