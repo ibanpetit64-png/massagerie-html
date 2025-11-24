@@ -1,83 +1,107 @@
 const socket = io();
-const body = document.body;
+let currentUser = null;
+let currentChat = null;
 
-// Auth
-const authSection = document.getElementById("authSection");
-const chatSection = document.getElementById("chatSection");
+const auth = document.getElementById("auth");
+const app = document.getElementById("app");
 
+// NAVIGATION LOGIN ⇄ REGISTER
 document.getElementById("goRegister").onclick = () => {
-  document.getElementById("login").style.display = "none";
   document.getElementById("register").style.display = "block";
 };
 
 document.getElementById("goLogin").onclick = () => {
   document.getElementById("register").style.display = "none";
-  document.getElementById("login").style.display = "block";
 };
 
-document.getElementById("registerBtn").onclick = async () => {
-  const username = document.getElementById("regUsername").value;
-  const password = document.getElementById("regPassword").value;
-  const res = await fetch("/api/register", {
+// INSCRIPTION
+document.getElementById("regBtn").onclick = async () => {
+  let username = document.getElementById("regUser").value;
+  let password = document.getElementById("regPass").value;
+
+  let res = await fetch("/api/register", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
   });
-  const data = await res.json();
+
+  let data = await res.json();
   alert(data.message);
-  if (res.ok) {
-    document.getElementById("register").style.display = "none";
-    document.getElementById("login").style.display = "block";
-  }
 };
 
+// CONNEXION
 document.getElementById("loginBtn").onclick = async () => {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-  const res = await fetch("/api/login", {
+  let username = document.getElementById("loginUser").value;
+  let password = document.getElementById("loginPass").value;
+
+  let res = await fetch("/api/login", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
   });
-  const data = await res.json();
+
+  let data = await res.json();
   if (!res.ok) return alert(data.message);
 
-  window.username = username;
-  authSection.style.display = "none";
-  chatSection.style.display = "grid";
+  currentUser = username;
+  auth.style.display = "none";
+  app.style.display = "flex";
 };
 
-// Chat
-const msgInput = document.getElementById("msgInput");
-const sendBtn = document.getElementById("sendBtn");
-const messagesDiv = document.getElementById("messages");
+// AJOUT CONTACT
+document.getElementById("addContactBtn").onclick = () => {
+  const contact = document.getElementById("addContactInput").value;
+  if (!contact) return;
 
-sendBtn.onclick = () => {
-  const text = msgInput.value.trim();
-  if (!text) return;
-  socket.emit("sendMessage", { user: window.username, text });
-  msgInput.value = "";
+  let li = document.createElement("li");
+  li.innerText = contact;
+  li.onclick = () => openChat(contact);
+
+  document.getElementById("contactList").appendChild(li);
+  document.getElementById("addContactInput").value = "";
 };
 
-socket.on("receiveMessage", ({ user, text }) => {
+// OUVERTURE D’UNE CONVERSATION
+function openChat(name) {
+  currentChat = name;
+  document.getElementById("currentChat").innerText = name;
+
+  document.querySelectorAll("#contactList li").forEach(li => li.classList.remove("active"));
+  event.target.classList.add("active");
+
+  document.getElementById("messages").innerHTML = "";
+}
+
+// ENVOI MESSAGE
+document.getElementById("sendBtn").onclick = () => {
+  if (!currentChat) return alert("Choisis un contact !");
+  const text = document.getElementById("msgInput").value;
+
+  socket.emit("sendMessage", {
+    from: currentUser,
+    to: currentChat,
+    text
+  });
+
+  document.getElementById("msgInput").value = "";
+};
+
+// RÉCEPTION MESSAGE
+socket.on("receiveMessage", msg => {
+  if (msg.to !== currentUser && msg.from !== currentUser) return;
+
   const div = document.createElement("div");
-  div.className = "message " + (user === window.username ? "self" : "other");
-  div.textContent = `${user}: ${text}`;
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  div.className = "message " + (msg.from === currentUser ? "self" : "other");
+  div.innerText = `${msg.from}: ${msg.text}`;
+  document.getElementById("messages").appendChild(div);
 });
 
-// Ajouter contact
-document.getElementById("addContactBtn").onclick = () => {
-  const name = document.getElementById("newContact").value.trim();
-  if (!name) return;
-  const li = document.createElement("li");
-  li.textContent = name;
-  document.getElementById("contactList").appendChild(li);
-  document.getElementById("newContact").value = "";
+// THEME
+document.getElementById("toggleTheme").onclick = () => {
+  document.body.classList.toggle("light");
 };
 
-// Mode clair/sombre
-document.getElementById("toggleTheme").onclick = () => {
-  body.classList.toggle("light");
+// DECONNEXION
+document.getElementById("logout").onclick = () => {
+  location.reload();
 };
