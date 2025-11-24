@@ -1,147 +1,43 @@
-:root {
-  --bg: #121212;
-  --panel: #1e1e1e;
-  --text: white;
-  --accent: #4ea3ff;
-}
-
-body.light {
-  --bg: #f2f2f2;
-  --panel: white;
-  --text: black;
-  --accent: #007bff;
-}
-
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  display: flex;
-  height: 100vh;
-  transition: 0.3s;
-}
-
-#auth {
-  margin: auto;
-  width: 300px;
-  padding: 20px;
-  background: var(--panel);
-  border-radius: 10px;
-  text-align: center;
-}
-
-#auth input, #auth button {
-  width: 90%;
-  margin: 8px 0;
-  padding: 10px;
-  border-radius: 5px;
-  border: none;
-}
-
-#auth button {
-  background: var(--accent);
-  color: white;
-  cursor: pointer;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
 }
 
 #app {
-  display: flex;
-  width: 100%;
+    width: 400px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
-aside {
-  width: 250px;
-  background: var(--panel);
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  border-right: 2px solid #00000055;
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+    border: 1px solid #ccc;
 }
 
-#contactList {
-  list-style: none;
-  padding: 0;
-  flex: 1;
-  overflow-y: auto;
+button {
+    padding: 10px 15px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
-#contactList li {
-  padding: 10px;
-  margin: 5px 0;
-  background: #2a2a2a;
-  border-radius: 6px;
-  cursor: pointer;
+#chat-window {
+    border: 1px solid #ccc;
+    height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
 }
 
-#contactList li.active {
-  background: var(--accent);
-  color: black;
-}
-
-.addContactBox {
-  display: flex;
-  gap: 5px;
-}
-
-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-header {
-  background: var(--panel);
-  padding: 15px;
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 2px solid #00000033;
-}
-
-#messages {
-  flex: 1;
-  padding: 15px;
-  overflow-y: auto;
-}
-
-.message {
-  margin: 5px 0;
-  padding: 10px;
-  max-width: 70%;
-  border-radius: 8px;
-}
-
-.self {
-  background: var(--accent);
-  color: black;
-  margin-left: auto;
-}
-
-.other {
-  background: #333;
-}
-
-#sendBox {
-  display: flex;
-  padding: 10px;
-  background: var(--panel);
-}
-
-#sendBox input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 5px;
-  background: #222;
-  border: none;
-  color: var(--text);
-}
-
-#sendBox button {
-  margin-left: 10px;
-  padding: 10px;
-  background: var(--accent);
-  color: black;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-}
