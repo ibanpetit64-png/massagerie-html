@@ -3,52 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Messagerie Connect</title>
+  <title>Messagerie</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
-    <!-- Authentification -->
-    <div id="authSection">
-      <h1>Messagerie Connect</h1>
-      <div id="login">
-        <input id="username" placeholder="Nom d'utilisateur">
-        <input id="password" type="password" placeholder="Mot de passe">
-        <button id="loginBtn">Connexion</button>
-        <p>Pas encore inscrit ? <a id="goRegister">Créer un compte</a></p>
-      </div>
-      <div id="register" style="display:none;">
-        <input id="regUsername" placeholder="Nom d'utilisateur">
-        <input id="regPassword" type="password" placeholder="Mot de passe">
-        <button id="registerBtn">S'inscrire</button>
-        <p>Déjà inscrit ? <a id="goLogin">Connexion</a></p>
-      </div>
-    </div>
 
-    <!-- Messagerie -->
-    <div id="chatSection" style="display:none;">
+<body>
+  <div id="auth">
+    <h1>Connexion</h1>
+    <input id="loginUser" placeholder="Nom d'utilisateur">
+    <input id="loginPass" type="password" placeholder="Mot de passe">
+    <button id="loginBtn">Connexion</button>
+
+    <p>Pas de compte ? <a id="goRegister">Créer un compte</a></p>
+
+    <div id="register" style="display:none;">
+      <h1>Inscription</h1>
+      <input id="regUser" placeholder="Nom d'utilisateur">
+      <input id="regPass" type="password" placeholder="Mot de passe">
+      <button id="regBtn">Créer le compte</button>
+      <p>Déjà un compte ? <a id="goLogin">Connexion</a></p>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <aside id="contacts">
+      <h2>Contacts</h2>
+      <ul id="contactList"></ul>
+
+      <div class="addContactBox">
+        <input id="addContactInput" placeholder="Ajouter un contact">
+        <button id="addContactBtn">+</button>
+      </div>
+
+      <button id="logout">Déconnexion</button>
+    </aside>
+
+    <main>
       <header>
-        <h2>💬 Messagerie</h2>
+        <h2 id="currentChat">Aucun contact</h2>
         <button id="toggleTheme">🌙</button>
       </header>
 
-      <aside id="contacts">
-        <h3>Contacts</h3>
-        <ul id="contactList"></ul>
-        <div class="add-contact">
-          <input id="newContact" placeholder="Ajouter un contact">
-          <button id="addContactBtn">+</button>
-        </div>
-      </aside>
+      <div id="messages"></div>
 
-      <main id="chatMain">
-        <div id="messages"></div>
-        <div id="composer">
-          <input id="msgInput" placeholder="Écris ton message...">
-          <button id="sendBtn">Envoyer</button>
-        </div>
-      </main>
-    </div>
+      <div id="sendBox">
+        <input id="msgInput" placeholder="Écrire un message...">
+        <button id="sendBtn">Envoyer</button>
+      </div>
+    </main>
   </div>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
