@@ -1,142 +1,147 @@
 :root {
-  --bg: #111;
-  --text: #fff;
-  --accent: #007bff;
-  --card: #1c1c1c;
+  --bg: #121212;
+  --panel: #1e1e1e;
+  --text: white;
+  --accent: #4ea3ff;
 }
 
 body.light {
-  --bg: #f1f1f1;
-  --text: #000;
-  --card: #fff;
+  --bg: #f2f2f2;
+  --panel: white;
+  --text: black;
+  --accent: #007bff;
 }
 
 body {
   margin: 0;
+  font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  font-family: "Poppins", sans-serif;
   display: flex;
   height: 100vh;
   transition: 0.3s;
 }
 
-.container {
+#auth {
   margin: auto;
+  width: 300px;
+  padding: 20px;
+  background: var(--panel);
+  border-radius: 10px;
+  text-align: center;
+}
+
+#auth input, #auth button {
+  width: 90%;
+  margin: 8px 0;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+}
+
+#auth button {
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+#app {
+  display: flex;
+  width: 100%;
+}
+
+aside {
+  width: 250px;
+  background: var(--panel);
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  width: 90%;
-  max-width: 900px;
-  background: var(--card);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 0 20px rgba(0,0,0,0.4);
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--accent);
-  padding: 10px 20px;
-  color: #fff;
-}
-
-#chatSection {
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  height: 100%;
-}
-
-#contacts {
-  background: #0e0e0e;
-  padding: 15px;
-  border-right: 1px solid #333;
-}
-
-#contacts h3 {
-  margin-top: 0;
+  border-right: 2px solid #00000055;
 }
 
 #contactList {
   list-style: none;
   padding: 0;
-  margin: 10px 0;
-  max-height: 300px;
+  flex: 1;
   overflow-y: auto;
 }
 
 #contactList li {
   padding: 10px;
-  margin-bottom: 5px;
-  background: #222;
+  margin: 5px 0;
+  background: #2a2a2a;
   border-radius: 6px;
   cursor: pointer;
 }
 
-.add-contact {
+#contactList li.active {
+  background: var(--accent);
+  color: black;
+}
+
+.addContactBox {
   display: flex;
   gap: 5px;
 }
 
-#chatMain {
+main {
+  flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+header {
+  background: var(--panel);
+  padding: 15px;
+  display: flex;
   justify-content: space-between;
-  padding: 20px;
+  border-bottom: 2px solid #00000033;
 }
 
 #messages {
   flex: 1;
+  padding: 15px;
   overflow-y: auto;
-  background: #151515;
-  padding: 10px;
-  border-radius: 10px;
 }
 
 .message {
-  margin: 8px 0;
+  margin: 5px 0;
   padding: 10px;
-  border-radius: 10px;
   max-width: 70%;
+  border-radius: 8px;
 }
 
 .self {
   background: var(--accent);
-  align-self: flex-end;
-  text-align: right;
-  color: #fff;
+  color: black;
+  margin-left: auto;
 }
 
 .other {
   background: #333;
-  align-self: flex-start;
 }
 
-#composer {
+#sendBox {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  padding: 10px;
+  background: var(--panel);
 }
 
-input, button {
-  font-family: inherit;
-}
-
-input {
+#sendBox input {
   flex: 1;
   padding: 10px;
-  border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   background: #222;
+  border: none;
   color: var(--text);
 }
 
-button {
+#sendBox button {
+  margin-left: 10px;
+  padding: 10px;
   background: var(--accent);
-  color: #fff;
+  color: black;
+  border-radius: 5px;
   border: none;
-  padding: 10px 15px;
-  border-radius: 6px;
   cursor: pointer;
 }
