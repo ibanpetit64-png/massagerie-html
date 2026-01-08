@@ -1,133 +1,148 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Messenger Immersif</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Clone</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --p: #007bff; --bg: #0f0f0f; --card: #1a1a1a; --txt: #ffffff; }
-        [data-theme="light"] { --bg: #f0f2f5; --card: #ffffff; --txt: #1c1e21; }
-        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--txt); height: 100vh; display: flex; }
-        #auth { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .card { background: var(--card); padding: 2rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 320px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid #333; background: #222; color: #fff; }
-        button { width: 100%; padding: 10px; background: var(--p); border: none; color: white; border-radius: 6px; cursor: pointer; }
-        #app { display: none; width: 100%; grid-template-columns: 300px 1fr; }
-        .sidebar { border-right: 1px solid #333; display: flex; flex-direction: column; }
-        .contact { padding: 15px; cursor: pointer; border-bottom: 1px solid #222; transition: 0.2s; }
-        .contact:hover, .active { background: #222; color: var(--p); }
-        .chat { display: flex; flex-direction: column; height: 100vh; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 70%; }
-        .mine { align-self: flex-end; background: var(--p); }
-        .other { align-self: flex-start; background: #333; }
-        .input-box { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
+        :root {
+            --wa-green: #075E54; --wa-teal: #128C7E; --wa-light-green: #25D366;
+            --wa-bg: #EDEDED; --wa-bubble-me: #DCF8C6; --wa-bubble-other: #FFFFFF;
+        }
+        body, html { margin: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #dadbd3; }
+        
+        /* AUTH MODAL */
+        #auth-overlay { position: fixed; inset: 0; background: #00a884; z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        .auth-card { background: white; padding: 40px; border-radius: 3px; box-shadow: 0 17px 50px 0 rgba(0,0,0,.19); width: 350px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .btn { background: #00a884; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+
+        /* MAIN APP */
+        #app { display: none; height: 100vh; max-width: 1400px; margin: 0 auto; background: #f0f2f5; display: flex; box-shadow: 0 1px 1px 0 rgba(0,0,0,.06), 0 2px 5px 0 rgba(0,0,0,.2); }
+        .sidebar { width: 30%; background: white; border-right: 1px solid rgba(0,0,0,.1); display: flex; flex-direction: column; }
+        .main-chat { width: 70%; display: flex; flex-direction: column; background: #e5ddd5 url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+
+        /* SIDEBAR COMPONENTS */
+        .header { background: #ededed; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .user-list { flex: 1; overflow-y: auto; }
+        .contact-item { padding: 12px 16px; display: flex; align-items: center; cursor: pointer; border-bottom: 1px solid #f2f2f2; transition: .2s; }
+        .contact-item:hover { background: #f5f6f6; }
+        .contact-item.active { background: #ebebeb; }
+        .avatar { width: 45px; height: 45px; background: #ccc; border-radius: 50%; margin-right: 15px; }
+
+        /* CHAT COMPONENTS */
+        #messages-container { flex: 1; overflow-y: auto; padding: 20px 7%; display: flex; flex-direction: column; }
+        .msg-bubble { max-width: 65%; padding: 8px 12px; border-radius: 7px; margin-bottom: 4px; font-size: 14.5px; position: relative; box-shadow: 0 1px 0.5px rgba(0,0,0,.13); }
+        .msg-bubble.me { align-self: flex-end; background: var(--wa-bubble-me); border-top-right-radius: 0; }
+        .msg-bubble.other { align-self: flex-start; background: var(--wa-bubble-other); border-top-left-radius: 0; }
+        .msg-time { font-size: 10px; color: #667781; text-align: right; margin-top: 4px; }
+
+        .input-area { background: #f0f2f5; padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
+        #message-input { flex: 1; border: none; padding: 10px 15px; border-radius: 8px; font-size: 15px; outline: none; }
     </style>
 </head>
 <body>
 
-<div id="auth">
-    <div class="card">
-        <h2 id="title">Connexion</h2>
-        <input type="text" id="userIn" placeholder="Pseudo">
+<div id="auth-overlay">
+    <div class="auth-card">
+        <h2 style="color: #41525d;">WhatsApp Clone</h2>
+        <input type="text" id="userIn" placeholder="Nom d'utilisateur">
         <input type="password" id="passIn" placeholder="Mot de passe">
-        <button onclick="handleAuth()" id="btnAuth">Se connecter</button>
-        <p onclick="toggleAuth()" style="font-size: 0.8rem; cursor: pointer; text-align: center; margin-top: 15px;">Changer mode Inscription/Connexion</p>
+        <button class="btn" onclick="auth('login')">Se connecter</button>
+        <p style="font-size: 12px; color: #667781; cursor: pointer; margin-top: 15px;" onclick="auth('signup')">Pas de compte ? S'inscrire</p>
     </div>
 </div>
 
 <div id="app">
     <div class="sidebar">
-        <div style="padding: 20px; font-weight: bold; border-bottom: 1px solid #333;">Mon Profil : <span id="myLabel"></span></div>
-        <div style="padding: 10px; color: grey; font-size: 0.8rem;">GROUPES <button onclick="createGroup()" style="width: auto; padding: 2px 5px; float: right;">+</button></div>
-        <div id="groupList"></div>
-        <div style="padding: 10px; color: grey; font-size: 0.8rem;">EN LIGNE</div>
-        <div id="userList"></div>
+        <div class="header">
+            <div style="font-weight: bold; color: #54656f;">Moi: <span id="myName"></span></div>
+            <button onclick="location.reload()" style="border:none; cursor:pointer;">🚪</button>
+        </div>
+        <div class="user-list" id="contacts"></div>
     </div>
-    <div class="chat">
-        <div id="chatHeader" style="padding: 15px; border-bottom: 1px solid #333; font-weight: bold;">Sélectionnez un chat</div>
-        <div id="messages"></div>
-        <div class="input-box">
-            <input type="text" id="msgIn" placeholder="Votre message...">
-            <button onclick="send()" style="width: 80px;">Envoyer</button>
+    <div class="main-chat">
+        <div class="header">
+            <div id="targetName" style="font-weight: bold;">Sélectionnez un contact</div>
+        </div>
+        <div id="messages-container"></div>
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Tapez un message">
+            <button class="btn" style="width: auto; padding: 10px 20px;" onclick="send()">Envoyer</button>
         </div>
     </div>
 </div>
 
 <script>
     const socket = io();
-    let me = "", target = "", isGroup = false, isLogin = true;
+    let me = "", target = "";
 
-    function toggleAuth() { isLogin = !isLogin; document.getElementById('title').innerText = isLogin ? "Connexion" : "Inscription"; }
-
-    async function handleAuth() {
-        me = document.getElementById('userIn').value;
-        const pass = document.getElementById('passIn').value;
-        const res = await fetch(isLogin ? '/login' : '/signup', {
+    async function auth(type) {
+        const username = document.getElementById('userIn').value;
+        const password = document.getElementById('passIn').value;
+        const res = await fetch('/' + type, {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: me, password: pass})
+            body: JSON.stringify({username, password})
         });
         const data = await res.json();
         if(data.success) {
-            document.getElementById('auth').style.display = 'none';
-            document.getElementById('app').style.display = 'grid';
-            document.getElementById('myLabel').innerText = me;
+            me = username;
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            document.getElementById('myName').innerText = me;
             socket.emit('registerUser', me);
-            loadGroups();
         } else alert(data.error);
     }
 
     socket.on('onlineUsers', users => {
-        const div = document.getElementById('userList');
-        div.innerHTML = users.filter(u => u !== me).map(u => `<div class="contact" onclick="select('${u}', false)">👤 ${u}</div>`).join('');
+        const list = document.getElementById('contacts');
+        list.innerHTML = users.filter(u => u !== me).map(u => `
+            <div class="contact-item ${u === target ? 'active' : ''}" onclick="selectUser('${u}')">
+                <div class="avatar"></div>
+                <div><div style="font-weight:bold">${u}</div><div style="font-size:12px;color:gray">En ligne</div></div>
+            </div>
+        `).join('');
     });
 
-    async function loadGroups() {
-        const res = await fetch(`/groups/${me}`);
-        const groups = await res.json();
-        document.getElementById('groupList').innerHTML = groups.map(g => `<div class="contact" onclick="select('${g.name}', true)">👥 ${g.name}</div>`).join('');
-    }
-
-    async function select(name, groupMode) {
-        target = name; isGroup = groupMode;
-        document.getElementById('chatHeader').innerText = target;
+    async function selectUser(name) {
+        target = name;
+        document.getElementById('targetName').innerText = target;
         const res = await fetch(`/messages/${me}/${target}`);
         const msgs = await res.json();
-        const box = document.getElementById('messages');
-        box.innerHTML = '';
-        msgs.forEach(displayMsg);
+        const container = document.getElementById('messages-container');
+        container.innerHTML = '';
+        msgs.forEach(appendMsg);
+        // Refresh UI selection
+        socket.emit('registerUser', me); 
     }
 
-    function displayMsg(msg) {
-        const isMine = msg.from === me;
-        const isTargetGroup = isGroup && msg.to === target;
-        const isTargetPrivate = !isGroup && (msg.from === target || (msg.from === me && msg.to === target));
-        
-        if (isTargetGroup || isTargetPrivate) {
+    function appendMsg(msg) {
+        if((msg.from === me && msg.to === target) || (msg.from === target && msg.to === me)) {
+            const container = document.getElementById('messages-container');
             const div = document.createElement('div');
-            div.className = `msg ${isMine ? 'mine' : 'other'}`;
-            div.innerHTML = `<small>${msg.from}</small><br>${msg.text}`;
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = 99999;
+            const isMe = msg.from === me;
+            div.className = `msg-bubble ${isMe ? 'me' : 'other'}`;
+            div.innerHTML = `
+                <div>${msg.text}</div>
+                <div class="msg-time">${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
     }
 
-    socket.on('receiveMessage', displayMsg);
+    socket.on('receiveMessage', appendMsg);
 
     function send() {
-        const text = document.getElementById('msgIn').value;
+        const text = document.getElementById('message-input').value;
         if(!text || !target) return;
-        socket.emit('sendMessage', { from: me, to: target, text, isGroup });
-        document.getElementById('msgIn').value = "";
+        socket.emit('sendMessage', { from: me, to: target, text, isGroup: false });
+        document.getElementById('message-input').value = "";
     }
 
-    async function createGroup() {
-        const name = prompt("Nom du groupe ?");
-        if(name) {
-            await fetch('/createGroup', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({groupName: name, creator: me}) });
-            loadGroups();
-        }
-    }
+    // Enter key to send
+    document.getElementById('message-input').addEventListener("keyup", e => { if(e.key === "Enter") send(); });
 </script>
 </body>
 </html>
