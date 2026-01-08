@@ -1,6 +1,7 @@
 {
-  "name": "chat-app-perfect",
+  "name": "massagerie-html",
   "version": "1.0.0",
+  "description": "Chat app immersive",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
