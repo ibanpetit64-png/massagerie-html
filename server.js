@@ -9,16 +9,19 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// --- CONFIGURATION ---
+// Variables d'environnement pour Render
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/chatDB';
+const MONGO_URI = process.env.MONGO_URI; // On la configurera dans Render
 
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// --- MONGODB ---
-mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Connecté"));
+// Connexion MongoDB
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("✅ Connecté à MongoDB Cloud"))
+    .catch(err => console.error("❌ Erreur MongoDB:", err));
 
+// Modèles
 const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true }
@@ -32,14 +35,14 @@ const Group = mongoose.model('Group', new mongoose.Schema({
     name: { type: String, unique: true }, members: [String]
 }));
 
-// --- ROUTES API ---
+// Routes API
 app.post('/signup', async (req, res) => {
     try {
         const hashed = await bcrypt.hash(req.body.password, 10);
         const user = new User({ username: req.body.username, password: hashed });
         await user.save();
         res.json({ success: true });
-    } catch (e) { res.status(400).json({ success: false, error: "Utilisateur déjà existant" }); }
+    } catch (e) { res.status(400).json({ success: false, error: "Pseudo déjà pris" }); }
 });
 
 app.post('/login', async (req, res) => {
@@ -47,13 +50,13 @@ app.post('/login', async (req, res) => {
     if (user && await bcrypt.compare(req.body.password, user.password)) {
         return res.json({ success: true });
     }
-    res.status(401).json({ success: false, error: "Identifiants incorrects" });
+    res.status(401).json({ success: false, error: "Mauvais identifiants" });
 });
 
 app.get('/messages/:u1/:target', async (req, res) => {
     const { u1, target } = req.params;
-    const group = await Group.findOne({ name: target });
-    const query = group ? { to: target } : { $or: [{ from: u1, to: target }, { from: target, to: u1 }] };
+    const isGrp = await Group.findOne({ name: target });
+    const query = isGrp ? { to: target } : { $or: [{ from: u1, to: target }, { from: target, to: u1 }] };
     const msgs = await Message.find(query).sort({ timestamp: 1 }).limit(50);
     res.json(msgs);
 });
@@ -66,12 +69,14 @@ app.post('/createGroup', async (req, res) => {
     } catch (e) { res.status(400).json({ success: false }); }
 });
 
-app.get('/groups/:user', async (req, res) => {
-    const groups = await Group.find(); // Pour cet exemple, on montre tous les groupes
+app.get('/groups', async (req, res) => {
+    const groups = await Group.find();
     res.json(groups);
 });
 
-// --- SOCKET.IO ---
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// Temps réel
 const onlineUsers = {};
 io.on('connection', (socket) => {
     socket.on('registerUser', (username) => {
@@ -82,14 +87,13 @@ io.on('connection', (socket) => {
     socket.on('sendMessage', async (data) => {
         const msg = new Message(data);
         await msg.save();
-        io.emit('receiveMessage', msg); // Simplifié : on broadcast à tout le monde, le front filtre
+        io.emit('receiveMessage', msg);
     });
 
     socket.on('disconnect', () => {
         const user = Object.keys(onlineUsers).find(k => onlineUsers[k] === socket.id);
-        delete onlineUsers[user];
-        io.emit('onlineUsers', Object.keys(onlineUsers));
+        if(user) { delete onlineUsers[user]; io.emit('onlineUsers', Object.keys(onlineUsers)); }
     });
 });
 
-server.listen(PORT, () => console.log(`🚀 Serveur sur port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Live sur port ${PORT}`));
