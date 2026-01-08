@@ -9,19 +9,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// Variables d'environnement pour Render
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI; // On la configurera dans Render
+const MONGO_URI = process.env.MONGO_URI; 
 
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Connexion MongoDB
-mongoose.connect(MONGO_URI)
-    .then(() => console.log("✅ Connecté à MongoDB Cloud"))
-    .catch(err => console.error("❌ Erreur MongoDB:", err));
+mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Connecté"));
 
-// Modèles
+// Schémas
 const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true }
@@ -31,69 +27,43 @@ const Message = mongoose.model('Message', new mongoose.Schema({
     from: String, to: String, text: String, isGroup: Boolean, timestamp: { type: Date, default: Date.now }
 }));
 
-const Group = mongoose.model('Group', new mongoose.Schema({
-    name: { type: String, unique: true }, members: [String]
-}));
-
-// Routes API
+// API
 app.post('/signup', async (req, res) => {
     try {
         const hashed = await bcrypt.hash(req.body.password, 10);
-        const user = new User({ username: req.body.username, password: hashed });
-        await user.save();
+        await new User({ username: req.body.username, password: hashed }).save();
         res.json({ success: true });
-    } catch (e) { res.status(400).json({ success: false, error: "Pseudo déjà pris" }); }
+    } catch (e) { res.status(400).json({ success: false, error: "Pseudo indisponible" }); }
 });
 
 app.post('/login', async (req, res) => {
     const user = await User.findOne({ username: req.body.username });
-    if (user && await bcrypt.compare(req.body.password, user.password)) {
-        return res.json({ success: true });
-    }
-    res.status(401).json({ success: false, error: "Mauvais identifiants" });
+    if (user && await bcrypt.compare(req.body.password, user.password)) return res.json({ success: true });
+    res.status(401).json({ success: false, error: "Erreur d'identifiants" });
 });
 
 app.get('/messages/:u1/:target', async (req, res) => {
-    const { u1, target } = req.params;
-    const isGrp = await Group.findOne({ name: target });
-    const query = isGrp ? { to: target } : { $or: [{ from: u1, to: target }, { from: target, to: u1 }] };
-    const msgs = await Message.find(query).sort({ timestamp: 1 }).limit(50);
+    const msgs = await Message.find({ $or: [{ from: req.params.u1, to: req.params.target }, { from: req.params.target, to: req.params.u1 }] }).sort({ timestamp: 1 });
     res.json(msgs);
 });
 
-app.post('/createGroup', async (req, res) => {
-    try {
-        const group = new Group({ name: req.body.groupName, members: [req.body.creator] });
-        await group.save();
-        res.json({ success: true });
-    } catch (e) { res.status(400).json({ success: false }); }
-});
-
-app.get('/groups', async (req, res) => {
-    const groups = await Group.find();
-    res.json(groups);
-});
-
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
-// Temps réel
+// Socket.io
 const onlineUsers = {};
 io.on('connection', (socket) => {
-    socket.on('registerUser', (username) => {
-        onlineUsers[username] = socket.id;
+    socket.on('registerUser', (user) => {
+        onlineUsers[user] = socket.id;
         io.emit('onlineUsers', Object.keys(onlineUsers));
     });
-
     socket.on('sendMessage', async (data) => {
-        const msg = new Message(data);
-        await msg.save();
-        io.emit('receiveMessage', msg);
+        await new Message(data).save();
+        if (onlineUsers[data.to]) io.to(onlineUsers[data.to]).emit('receiveMessage', data);
+        socket.emit('receiveMessage', data);
     });
-
     socket.on('disconnect', () => {
         const user = Object.keys(onlineUsers).find(k => onlineUsers[k] === socket.id);
-        if(user) { delete onlineUsers[user]; io.emit('onlineUsers', Object.keys(onlineUsers)); }
+        delete onlineUsers[user];
+        io.emit('onlineUsers', Object.keys(onlineUsers));
     });
 });
 
-server.listen(PORT, () => console.log(`🚀 Live sur port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Serveur WhatsApp-Clone sur port ${PORT}`));
