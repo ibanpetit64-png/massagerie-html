@@ -15,13 +15,14 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(express.json());
 app.use(express.static(__dirname));
 
-mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Connecté"));
+// Connexion à la base de données
+mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Connecté")).catch(err => console.log("❌ Erreur connect:", err));
 
-// Schémas
+// Modèles de données
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    friends: [String] // Liste des pseudos ajoutés
+    friends: [String] 
 });
 const User = mongoose.model('User', UserSchema);
 
@@ -29,7 +30,7 @@ const Message = mongoose.model('Message', new mongoose.Schema({
     from: String, to: String, text: String, timestamp: { type: Date, default: Date.now }
 }));
 
-// API AUTH
+// API Authentification
 app.post('/signup', async (req, res) => {
     try {
         const hashed = await bcrypt.hash(req.body.password, 10);
@@ -44,7 +45,7 @@ app.post('/login', async (req, res) => {
     res.status(401).json({ success: false, error: "Erreur d'identifiants" });
 });
 
-// API AMIS
+// API Amis
 app.post('/add-friend', async (req, res) => {
     const { me, friendName } = req.body;
     const friend = await User.findOne({ username: friendName });
@@ -65,7 +66,7 @@ app.get('/messages/:u1/:target', async (req, res) => {
     res.json(msgs);
 });
 
-// SOCKET
+// Temps réel (Socket.io)
 const onlineUsers = {};
 io.on('connection', (socket) => {
     socket.on('registerUser', (user) => {
@@ -84,4 +85,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => console.log(`🚀 Serveur Mobile-Ready sur port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Serveur actif sur port ${PORT}`));
