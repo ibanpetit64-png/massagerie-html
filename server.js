@@ -15,14 +15,14 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Connexion à la base de données
-mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Connecté")).catch(err => console.log("❌ Erreur connect:", err));
+mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Connecté"));
 
-// Modèles de données
+// Schéma Utilisateur mis à jour
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    friends: [String] 
+    friends: [String],
+    requests: [String] // Liste des pseudos qui ont envoyé une demande
 });
 const User = mongoose.model('User', UserSchema);
 
@@ -30,11 +30,11 @@ const Message = mongoose.model('Message', new mongoose.Schema({
     from: String, to: String, text: String, timestamp: { type: Date, default: Date.now }
 }));
 
-// API Authentification
+// --- ROUTES AUTH ---
 app.post('/signup', async (req, res) => {
     try {
         const hashed = await bcrypt.hash(req.body.password, 10);
-        await new User({ username: req.body.username, password: hashed, friends: [] }).save();
+        await new User({ username: req.body.username, password: hashed, friends: [], requests: [] }).save();
         res.json({ success: true });
     } catch (e) { res.status(400).json({ success: false, error: "Pseudo déjà pris" }); }
 });
@@ -45,20 +45,38 @@ app.post('/login', async (req, res) => {
     res.status(401).json({ success: false, error: "Erreur d'identifiants" });
 });
 
-// API Amis
-app.post('/add-friend', async (req, res) => {
-    const { me, friendName } = req.body;
-    const friend = await User.findOne({ username: friendName });
-    if (!friend) return res.status(404).json({ success: false, error: "Utilisateur introuvable" });
-    if (me === friendName) return res.status(400).json({ success: false, error: "Vous ne pouvez pas vous ajouter vous-même" });
+// --- SYSTÈME D'INVITATIONS ---
+
+// Envoyer une demande
+app.post('/send-request', async (req, res) => {
+    const { from, to } = req.body;
+    const target = await User.findOne({ username: to });
+    if (!target) return res.status(404).json({ error: "Utilisateur introuvable" });
+    if (target.friends.includes(from) || target.requests.includes(from)) return res.status(400).json({ error: "Déjà ami ou demande en cours" });
     
-    await User.updateOne({ username: me }, { $addToSet: { friends: friendName } });
+    await User.updateOne({ username: to }, { $addToSet: { requests: from } });
     res.json({ success: true });
 });
 
-app.get('/friends/:username', async (req, res) => {
+// Accepter une demande
+app.post('/accept-request', async (req, res) => {
+    const { me, friend } = req.body;
+    await User.updateOne({ username: me }, { $pull: { requests: friend }, $addToSet: { friends: friend } });
+    await User.updateOne({ username: friend }, { $addToSet: { friends: me } });
+    res.json({ success: true });
+});
+
+// Refuser une demande
+app.post('/decline-request', async (req, res) => {
+    const { me, friend } = req.body;
+    await User.updateOne({ username: me }, { $pull: { requests: friend } });
+    res.json({ success: true });
+});
+
+// Récupérer infos (amis + demandes)
+app.get('/user-data/:username', async (req, res) => {
     const user = await User.findOne({ username: req.params.username });
-    res.json(user ? user.friends : []);
+    res.json({ friends: user.friends, requests: user.requests });
 });
 
 app.get('/messages/:u1/:target', async (req, res) => {
@@ -66,7 +84,7 @@ app.get('/messages/:u1/:target', async (req, res) => {
     res.json(msgs);
 });
 
-// Temps réel (Socket.io)
+// --- SOCKET.IO ---
 const onlineUsers = {};
 io.on('connection', (socket) => {
     socket.on('registerUser', (user) => {
@@ -85,4 +103,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => console.log(`🚀 Serveur actif sur port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Serveur Notifications actif sur ${PORT}`));
