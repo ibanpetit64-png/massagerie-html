@@ -3,49 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WhatsApp Mobile</title>
+    <title>WhatsApp Clone</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { --wa-green: #00a884; --wa-bg: #f0f2f5; --me-bubble: #dcf8c6; }
-        body, html { margin: 0; height: 100%; font-family: sans-serif; overflow: hidden; }
+        body, html { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
 
-        /* AUTH */
+        /* AUTH SCREEN */
         #auth-screen { position: fixed; inset: 0; background: var(--wa-green); z-index: 2000; display: flex; justify-content: center; align-items: center; }
-        .auth-box { background: white; padding: 30px; border-radius: 10px; width: 85%; max-width: 350px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .auth-box { background: white; padding: 30px; border-radius: 10px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; }
         .btn { background: var(--wa-green); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* LAYOUT RESPONSIVE */
+        /* APP LAYOUT */
         #app { display: none; height: 100vh; width: 100vw; flex-direction: row; }
-        
         .sidebar { width: 350px; height: 100%; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: 0.3s; }
-        .chat-area { flex: 1; height: 100%; display: flex; flex-direction: column; background: #e5ddd5; position: relative; }
+        .chat-area { flex: 1; height: 100%; display: flex; flex-direction: column; background: #e5ddd5 url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); position: relative; }
 
-        /* MOBILE OVERRIDE */
+        /* MOBILE OPTIMIZATION */
         @media (max-width: 768px) {
-            .sidebar { width: 100vw; position: absolute; z-index: 10; }
-            .chat-area { width: 100vw; position: absolute; z-index: 5; }
+            .sidebar { width: 100vw; position: absolute; z-index: 10; left: 0; top: 0; }
+            .chat-area { width: 100vw; position: absolute; z-index: 5; left: 0; top: 0; }
             .sidebar.hidden { transform: translateX(-100%); }
         }
 
-        /* CONTACTS & ADD FRIEND */
-        .header { background: #ededed; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        /* HEADER & FRIENDS */
+        .header { background: #ededed; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-bottom: 1px solid #ddd; }
         .add-friend-bar { padding: 10px; background: #f6f6f6; display: flex; gap: 5px; }
-        .add-friend-bar input { margin: 0; padding: 8px; }
+        .add-friend-bar input { margin: 0; padding: 10px; }
         .contact-list { flex: 1; overflow-y: auto; }
-        .contact-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .contact-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
         .contact-item:hover { background: #f9f9f9; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
         .online { background: #25d366; }
 
-        /* MESSAGES */
-        #msg-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px; }
-        .bubble { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-        .me { align-self: flex-end; background: var(--me-bubble); }
-        .other { align-self: flex-start; background: white; }
+        /* CHAT BUBBLES */
+        #msg-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 6px; }
+        .bubble { max-width: 75%; padding: 8px 14px; border-radius: 8px; font-size: 15px; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); position: relative; }
+        .me { align-self: flex-end; background: var(--me-bubble); border-top-right-radius: 0; }
+        .other { align-self: flex-start; background: white; border-top-left-radius: 0; }
 
-        .footer { padding: 10px; background: #f0f2f5; display: flex; gap: 10px; }
-        .back-btn { display: none; margin-right: 10px; font-size: 20px; cursor: pointer; }
+        .footer { padding: 10px 15px; background: #f0f2f5; display: flex; gap: 10px; align-items: center; }
+        .back-btn { display: none; margin-right: 15px; font-size: 22px; cursor: pointer; color: #54656f; }
         @media (max-width: 768px) { .back-btn { display: inline-block; } }
     </style>
 </head>
@@ -53,35 +52,37 @@
 
 <div id="auth-screen">
     <div class="auth-box">
-        <h2>WhatsApp Mobile</h2>
-        <input type="text" id="userIn" placeholder="Nom d'utilisateur">
+        <h2 style="color: #41525d;">WhatsApp Clone</h2>
+        <input type="text" id="userIn" placeholder="Pseudo">
         <input type="password" id="passIn" placeholder="Mot de passe">
-        <button class="btn" onclick="auth('login')">CONNEXION</button>
-        <p style="font-size: 12px; color: #666; cursor: pointer; margin-top: 15px;" onclick="auth('signup')">Créer un compte</p>
+        <button class="btn" onclick="auth('login')">SE CONNECTER</button>
+        <p style="font-size: 13px; color: #666; cursor: pointer; margin-top: 20px;" onclick="auth('signup')">Pas de compte ? Créer un compte</p>
     </div>
 </div>
 
 <div id="app">
     <div class="sidebar" id="sidebar">
         <div class="header">
-            <span>Moi: <span id="myName"></span></span>
+            <span>Profil: <span id="myName" style="color:var(--wa-green)"></span></span>
         </div>
         <div class="add-friend-bar">
-            <input type="text" id="friendIn" placeholder="Ajouter un pseudo...">
-            <button class="btn" style="width: 40px;" onclick="addFriend()">+</button>
+            <input type="text" id="friendIn" placeholder="Ajouter un ami...">
+            <button class="btn" style="width: 50px;" onclick="addFriend()">+</button>
         </div>
         <div class="contact-list" id="contacts"></div>
     </div>
 
     <div class="chat-area">
         <div class="header">
-            <span class="back-btn" onclick="toggleSidebar(true)">⬅</span>
-            <span id="targetName">Chat</span>
+            <div>
+                <span class="back-btn" onclick="toggleSidebar(true)">⬅</span>
+                <span id="targetName">Chat</span>
+            </div>
         </div>
         <div id="msg-container"></div>
         <div class="footer">
-            <input type="text" id="msgIn" placeholder="Message" onkeydown="if(event.key==='Enter') send()">
-            <button class="btn" style="width: 80px;" onclick="send()">OK</button>
+            <input type="text" id="msgIn" placeholder="Tapez un message" onkeydown="if(event.key==='Enter') send()">
+            <button class="btn" style="width: 60px;" onclick="send()">OK</button>
         </div>
     </div>
 </div>
@@ -129,7 +130,7 @@
         list.innerHTML = friends.map(f => `
             <div class="contact-item" onclick="selectChat('${f}')">
                 <div class="status-dot ${onlineUsers.includes(f) ? 'online' : ''}"></div>
-                <span>${f}</span>
+                <div style="font-weight:500">${f}</div>
             </div>
         `).join('');
     }
@@ -143,7 +144,7 @@
     async function selectChat(name) {
         target = name;
         document.getElementById('targetName').innerText = target;
-        toggleSidebar(false); // Cache la sidebar sur mobile
+        toggleSidebar(false); 
         const res = await fetch(`/messages/${me}/${target}`);
         const msgs = await res.json();
         document.getElementById('msg-container').innerHTML = '';
@@ -162,10 +163,11 @@
     }
 
     function send() {
-        const text = document.getElementById('msgIn').value;
+        const input = document.getElementById('msgIn');
+        const text = input.value;
         if(!text || !target) return;
         socket.emit('sendMessage', { from: me, to: target, text });
-        document.getElementById('msgIn').value = "";
+        input.value = "";
     }
 
     socket.on('receiveMessage', appendMsg);
