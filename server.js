@@ -15,22 +15,21 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(express.json());
 app.use(express.static(__dirname));
 
-mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Connecté"));
+mongoose.connect(MONGO_URI).then(() => console.log("✅ Connecté à MongoDB Cloud"));
 
-// Schéma Utilisateur mis à jour
-const UserSchema = new mongoose.Schema({
+// Modèle Utilisateur avec demandes d'amis
+const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
     friends: [String],
-    requests: [String] // Liste des pseudos qui ont envoyé une demande
-});
-const User = mongoose.model('User', UserSchema);
+    requests: [String] 
+}));
 
 const Message = mongoose.model('Message', new mongoose.Schema({
     from: String, to: String, text: String, timestamp: { type: Date, default: Date.now }
 }));
 
-// --- ROUTES AUTH ---
+// API AUTH
 app.post('/signup', async (req, res) => {
     try {
         const hashed = await bcrypt.hash(req.body.password, 10);
@@ -42,23 +41,19 @@ app.post('/signup', async (req, res) => {
 app.post('/login', async (req, res) => {
     const user = await User.findOne({ username: req.body.username });
     if (user && await bcrypt.compare(req.body.password, user.password)) return res.json({ success: true });
-    res.status(401).json({ success: false, error: "Erreur d'identifiants" });
+    res.status(401).json({ success: false, error: "Mauvais identifiants" });
 });
 
-// --- SYSTÈME D'INVITATIONS ---
-
-// Envoyer une demande
+// API SYSTEME AMIS
 app.post('/send-request', async (req, res) => {
     const { from, to } = req.body;
     const target = await User.findOne({ username: to });
     if (!target) return res.status(404).json({ error: "Utilisateur introuvable" });
-    if (target.friends.includes(from) || target.requests.includes(from)) return res.status(400).json({ error: "Déjà ami ou demande en cours" });
-    
+    if (target.friends.includes(from) || target.requests.includes(from)) return res.status(400).json({ error: "Déjà ami ou en attente" });
     await User.updateOne({ username: to }, { $addToSet: { requests: from } });
     res.json({ success: true });
 });
 
-// Accepter une demande
 app.post('/accept-request', async (req, res) => {
     const { me, friend } = req.body;
     await User.updateOne({ username: me }, { $pull: { requests: friend }, $addToSet: { friends: friend } });
@@ -66,14 +61,12 @@ app.post('/accept-request', async (req, res) => {
     res.json({ success: true });
 });
 
-// Refuser une demande
 app.post('/decline-request', async (req, res) => {
     const { me, friend } = req.body;
     await User.updateOne({ username: me }, { $pull: { requests: friend } });
     res.json({ success: true });
 });
 
-// Récupérer infos (amis + demandes)
 app.get('/user-data/:username', async (req, res) => {
     const user = await User.findOne({ username: req.params.username });
     res.json({ friends: user.friends, requests: user.requests });
@@ -84,12 +77,12 @@ app.get('/messages/:u1/:target', async (req, res) => {
     res.json(msgs);
 });
 
-// --- SOCKET.IO ---
+// SOCKET.IO
 const onlineUsers = {};
 io.on('connection', (socket) => {
     socket.on('registerUser', (user) => {
         onlineUsers[user] = socket.id;
-        io.emit('onlineStatusUpdate', Object.keys(onlineUsers));
+        io.emit('onlineUpdate', Object.keys(onlineUsers));
     });
     socket.on('sendMessage', async (data) => {
         await new Message(data).save();
@@ -99,8 +92,8 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const user = Object.keys(onlineUsers).find(k => onlineUsers[k] === socket.id);
         delete onlineUsers[user];
-        io.emit('onlineStatusUpdate', Object.keys(onlineUsers));
+        io.emit('onlineUpdate', Object.keys(onlineUsers));
     });
 });
 
-server.listen(PORT, () => console.log(`🚀 Serveur Notifications actif sur ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Serveur Snap+ sur port ${PORT}`));
