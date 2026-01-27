@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MyDantec</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%2300aff0%22/><text y=%22.9em%22 x=%228px%22 font-size=%2270%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22>M</text></svg>">
+    <link rel="icon" type="image/png" href="logo.png">
     
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -20,6 +20,13 @@
         
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
 
+        /* LOGO MyDantec */
+        .logo-container {
+            width: 100px; height: 100px; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .logo-img { width: 100%; height: 100%; object-fit: contain; border-radius: 15px; }
+
         /* PAGE DE CONNEXION */
         #auth-screen { 
             position: fixed; inset: 0; 
@@ -30,13 +37,6 @@
             background: var(--bg); padding: 40px 30px; border-radius: 24px; 
             width: 90%; max-width: 400px; text-align: center; 
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        .logo-circle {
-            width: 70px; height: 70px; background: var(--brand); 
-            border-radius: 20px; margin: 0 auto 20px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 30px; color: white; font-weight: bold;
-            box-shadow: 0 8px 15px rgba(0,175,240,0.3);
         }
         .auth-input { 
             width: 100%; padding: 14px; border: 2px solid var(--input-bg); 
@@ -67,17 +67,16 @@
         
         .btn-circle { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--brand); color: white; cursor: pointer; font-size: 18px; }
         .back-btn { display: none; font-size: 28px; cursor: pointer; margin-right: 15px; color: var(--brand); }
-        @media (max-width: 768px) { .back-btn { display: block; } }
 
-        /* ICÔNE DISCRÈTE MyDantec */
+        /* ICÔNE FLOTTANTE */
         .floating-logo {
-            position: fixed; bottom: 15px; left: 15px; width: 30px; height: 30px;
-            background: var(--brand); color: white; border-radius: 8px;
+            position: fixed; bottom: 15px; left: 15px; width: 35px; height: 35px;
+            background: white; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 14px; opacity: 0.2; z-index: 100;
-            pointer-events: none; transition: opacity 0.3s;
+            opacity: 0.3; z-index: 100; pointer-events: none; transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); overflow: hidden;
         }
-        body:hover .floating-logo { opacity: 0.7; }
+        body:hover .floating-logo { opacity: 0.8; }
 
         .item { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; margin-right: 12px; }
@@ -86,11 +85,15 @@
 </head>
 <body>
 
-<div class="floating-logo">M</div>
+<div class="floating-logo">
+    <img src="logo.png" style="width: 100%; height: 100%; object-fit: cover;">
+</div>
 
 <div id="auth-screen">
     <div class="auth-box">
-        <div class="logo-circle">M</div>
+        <div class="logo-container">
+            <img src="logo.png" class="logo-img">
+        </div>
         <h2>MyDantec</h2>
         <p>Connectez-vous pour commencer</p>
         <input type="text" id="userIn" class="auth-input" placeholder="Pseudo">
@@ -103,7 +106,10 @@
 <div id="app">
     <div class="sidebar" id="sidebar">
         <div class="header">
-            <span style="font-weight: 800;">MyDantec</span>
+            <span style="font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                <img src="logo.png" style="width: 25px; height: 25px; border-radius: 5px; object-fit: cover;">
+                MyDantec
+            </span>
             <span style="cursor:pointer" onclick="toggleTheme()">🌓</span>
         </div>
         <div style="padding: 15px;">
@@ -213,7 +219,7 @@
 
     function setSidebar(show) {
         const sb = document.getElementById('sidebar');
-        show ? sb.classList.remove('hidden') : sb.classList.add('hidden');
+        if(show) sb.classList.remove('hidden'); else sb.classList.add('hidden');
     }
 
     async function selectChat(name) {
