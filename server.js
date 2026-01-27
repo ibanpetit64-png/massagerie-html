@@ -15,9 +15,8 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(express.json());
 app.use(express.static(__dirname));
 
-mongoose.connect(MONGO_URI).then(() => console.log("✅ Connecté à MongoDB Cloud"));
+mongoose.connect(MONGO_URI).then(() => console.log("✅ MyDantec Cloud Connecté"));
 
-// Modèle Utilisateur avec demandes d'amis
 const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
@@ -29,7 +28,6 @@ const Message = mongoose.model('Message', new mongoose.Schema({
     from: String, to: String, text: String, timestamp: { type: Date, default: Date.now }
 }));
 
-// API AUTH
 app.post('/signup', async (req, res) => {
     try {
         const hashed = await bcrypt.hash(req.body.password, 10);
@@ -44,7 +42,6 @@ app.post('/login', async (req, res) => {
     res.status(401).json({ success: false, error: "Mauvais identifiants" });
 });
 
-// API SYSTEME AMIS
 app.post('/send-request', async (req, res) => {
     const { from, to } = req.body;
     const target = await User.findOne({ username: to });
@@ -77,7 +74,6 @@ app.get('/messages/:u1/:target', async (req, res) => {
     res.json(msgs);
 });
 
-// SOCKET.IO
 const onlineUsers = {};
 io.on('connection', (socket) => {
     socket.on('registerUser', (user) => {
@@ -96,4 +92,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => console.log(`🚀 Serveur Snap+ sur port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 MyDantec en ligne sur ${PORT}`));
