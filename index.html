@@ -1,91 +1,99 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WhatsApp Notifications</title>
+    <title>Snap+ Messenger</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --wa-green: #00a884; --wa-bg: #f0f2f5; --me-bubble: #dcf8c6; }
-        body, html { margin: 0; height: 100%; font-family: sans-serif; overflow: hidden; background: #dadbd3; }
+        :root {
+            --snap-blue: #00aff0; --bg: #ffffff; --text: #1a1a1b; --sidebar-bg: #f7f7f7;
+            --bubble-me: #00aff0; --bubble-other: #e9e9eb; --input-bg: #f0f0f0;
+        }
+        [data-theme="dark"] {
+            --bg: #0b141a; --text: #e9edef; --sidebar-bg: #111b21;
+            --bubble-me: #00aff0; --bubble-other: #202c33; --input-bg: #2a3942;
+        }
+        
+        body, html { margin: 0; height: 100%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
 
-        /* AUTH */
-        #auth-screen { position: fixed; inset: 0; background: var(--wa-green); z-index: 2000; display: flex; justify-content: center; align-items: center; }
-        .auth-box { background: white; padding: 30px; border-radius: 10px; width: 85%; max-width: 350px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn { background: var(--wa-green); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-small { padding: 5px 10px; font-size: 12px; width: auto; margin-left: 5px; }
+        /* AUTH SCREEN */
+        #auth-screen { position: fixed; inset: 0; background: var(--snap-blue); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .auth-box { background: var(--bg); padding: 30px; border-radius: 20px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; background: var(--input-bg); color: var(--text); box-sizing: border-box; outline: none; }
+        .btn { background: var(--snap-blue); color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* APP */
+        /* MAIN LAYOUT */
         #app { display: none; height: 100vh; width: 100vw; flex-direction: row; }
-        .sidebar { width: 350px; height: 100%; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: 0.3s; }
-        .chat-area { flex: 1; height: 100%; display: flex; flex-direction: column; background: #e5ddd5; position: relative; }
+        .sidebar { width: 350px; background: var(--sidebar-bg); border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: 0.3s; }
+        .chat-area { flex: 1; background: var(--bg); display: flex; flex-direction: column; position: relative; }
 
         @media (max-width: 768px) {
             .sidebar { width: 100vw; position: absolute; z-index: 10; }
-            .chat-area { width: 100vw; position: absolute; z-index: 5; }
             .sidebar.hidden { transform: translateX(-100%); }
         }
 
-        .header { background: #ededed; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-bottom: 1px solid #ddd; }
-        .section-title { padding: 10px 15px; background: #f6f6f6; font-size: 12px; color: #666; font-weight: bold; border-bottom: 1px solid #eee; }
-        
-        .contact-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+        /* HEADER */
+        .header { padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .theme-toggle { cursor: pointer; font-size: 20px; }
+
+        /* FRIENDS & REQUESTS */
+        .section-label { padding: 10px 15px; font-size: 11px; font-weight: bold; color: var(--snap-blue); text-transform: uppercase; letter-spacing: 1px; }
+        .item { padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; margin-right: 10px; }
-        .online { background: #25d366; }
+        .online { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
 
-        /* MESSAGES */
-        #msg-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px; }
-        .bubble { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 15px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-        .me { align-self: flex-end; background: var(--me-bubble); }
-        .other { align-self: flex-start; background: white; }
+        /* CHAT */
+        #msg-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
+        .me { align-self: flex-end; background: var(--snap-blue); color: white; border-bottom-right-radius: 4px; }
+        .other { align-self: flex-start; background: var(--bubble-other); color: var(--text); border-bottom-left-radius: 4px; }
 
-        .footer { padding: 10px; background: #f0f2f5; display: flex; gap: 10px; }
-        .back-btn { display: none; margin-right: 15px; font-size: 20px; cursor: pointer; }
-        @media (max-width: 768px) { .back-btn { display: inline-block; } }
+        .footer { padding: 15px; display: flex; gap: 10px; align-items: center; background: var(--bg); }
+        #msgIn { margin: 0; border: none; border-radius: 20px; }
+        .back-btn { display: none; font-size: 24px; cursor: pointer; margin-right: 10px; color: var(--snap-blue); }
+        @media (max-width: 768px) { .back-btn { display: block; } }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
     <div class="auth-box">
-        <h2>WhatsApp Pro</h2>
+        <h2 style="color: var(--snap-blue)">Snap+</h2>
         <input type="text" id="userIn" placeholder="Pseudo">
         <input type="password" id="passIn" placeholder="Mot de passe">
-        <button class="btn" onclick="auth('login')">CONNEXION</button>
-        <p style="font-size: 12px; color: #666; cursor: pointer; margin-top: 15px;" onclick="auth('signup')">Créer un compte</p>
+        <button class="btn" onclick="auth('login')">Se connecter</button>
+        <p style="font-size: 12px; margin-top: 15px; cursor:pointer" onclick="auth('signup')">Créer un compte</p>
     </div>
 </div>
 
 <div id="app">
     <div class="sidebar" id="sidebar">
         <div class="header">
-            <span>Moi: <span id="myName" style="color:var(--wa-green)"></span></span>
+            <span>Moi: <span id="myName" style="color: var(--snap-blue)"></span></span>
+            <span class="theme-toggle" onclick="toggleTheme()">🌓</span>
         </div>
-        
-        <div style="padding: 10px; background: #f0f2f5; display: flex; gap: 5px;">
-            <input type="text" id="friendIn" placeholder="Pseudo à ajouter..." style="margin:0; padding:8px;">
+        <div style="padding: 10px; display: flex; gap: 5px;">
+            <input type="text" id="friendIn" placeholder="Ajouter un ami..." style="margin:0">
             <button class="btn" style="width: 50px;" onclick="sendRequest()">+</button>
         </div>
-
-        <div id="requests-section">
-            <div class="section-title">DEMANDES REÇUES</div>
-            <div id="request-list"></div>
-        </div>
-
-        <div class="section-title">MES AMIS</div>
-        <div class="contact-list" id="contacts"></div>
+        
+        <div id="request-area"></div>
+        <div class="section-label">Amis</div>
+        <div id="friend-list"></div>
     </div>
 
     <div class="chat-area">
         <div class="header">
-            <span class="back-btn" onclick="toggleSidebar(true)">⬅</span>
-            <span id="targetName">Chat</span>
+            <div style="display:flex; align-items:center">
+                <span class="back-btn" onclick="setSidebar(true)">‹</span>
+                <span id="targetName">Sélectionne un ami</span>
+            </div>
         </div>
         <div id="msg-container"></div>
         <div class="footer">
-            <input type="text" id="msgIn" placeholder="Message" onkeydown="if(event.key==='Enter') send()">
-            <button class="btn" style="width: 70px;" onclick="send()">OK</button>
+            <input type="text" id="msgIn" placeholder="Envoyer un Chat" onkeydown="if(event.key==='Enter') send()">
+            <button class="btn" style="width: 60px;" onclick="send()">OK</button>
         </div>
     </div>
 </div>
@@ -93,6 +101,15 @@
 <script>
     const socket = io();
     let me = "", target = "", onlineUsers = [];
+
+    // THEME LOGIC
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    }
+    if(localStorage.getItem('theme')) document.documentElement.setAttribute('data-theme', localStorage.getItem('theme'));
 
     async function auth(type) {
         const username = document.getElementById('userIn').value;
@@ -108,8 +125,8 @@
             document.getElementById('app').style.display = 'flex';
             document.getElementById('myName').innerText = me;
             socket.emit('registerUser', me);
-            refreshData();
-            setInterval(refreshData, 5000); // Rafraîchit les demandes toutes les 5s
+            updateUI();
+            setInterval(updateUI, 5000);
         } else alert(data.error);
     }
 
@@ -120,65 +137,61 @@
             body: JSON.stringify({from: me, to})
         });
         const data = await res.json();
-        if(data.success) {
-            alert("Demande envoyée !");
-            document.getElementById('friendIn').value = "";
-        } else alert(data.error);
+        if(data.success) { alert("Demande envoyée !"); document.getElementById('friendIn').value = ""; }
+        else alert(data.error);
     }
 
-    async function refreshData() {
+    async function updateUI() {
         const res = await fetch(`/user-data/${me}`);
         const data = await res.json();
         
-        // Afficher les demandes
-        const reqDiv = document.getElementById('request-list');
-        reqDiv.innerHTML = data.requests.map(r => `
-            <div class="contact-item" style="cursor:default; background:#fffbe6">
-                <span>🔔 <b>${r}</b></span>
-                <div>
-                    <button class="btn btn-small" onclick="handleRequest('${r}', 'accept')">✅</button>
-                    <button class="btn btn-small" style="background:#ea4335" onclick="handleRequest('${r}', 'decline')">❌</button>
+        // Requests
+        const reqArea = document.getElementById('request-area');
+        if(data.requests.length > 0) {
+            reqArea.innerHTML = `<div class="section-label">Demandes d'amis</div>` + data.requests.map(r => `
+                <div class="item" style="background: rgba(0,175,240,0.1)">
+                    <span>${r}</span>
+                    <div>
+                        <button class="btn" style="width:30px; padding:5px" onclick="handleReq('${r}','accept')">✅</button>
+                        <button class="btn" style="width:30px; padding:5px; background:gray" onclick="handleReq('${r}','decline')">❌</button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+        } else reqArea.innerHTML = '';
 
-        // Afficher les amis
-        const friendDiv = document.getElementById('contacts');
-        friendDiv.innerHTML = data.friends.map(f => `
-            <div class="contact-item" onclick="selectChat('${f}')">
-                <div style="display:flex; align-items:center;">
+        // Friends
+        document.getElementById('friend-list').innerHTML = data.friends.map(f => `
+            <div class="item" onclick="selectChat('${f}')">
+                <div style="display:flex; align-items:center">
                     <div class="status-dot ${onlineUsers.includes(f) ? 'online' : ''}"></div>
                     <span>${f}</span>
                 </div>
+                <span style="color:var(--snap-blue)">›</span>
             </div>
         `).join('');
     }
 
-    async function handleRequest(friend, type) {
-        await fetch(`/${type}-request`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({me, friend})
-        });
-        refreshData();
+    async function handleReq(friend, action) {
+        await fetch(`/${action}-request`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({me, friend}) });
+        updateUI();
     }
 
-    function toggleSidebar(show) {
+    function setSidebar(show) {
         const sb = document.getElementById('sidebar');
-        if(show) sb.classList.remove('hidden');
-        else sb.classList.add('hidden');
+        show ? sb.classList.remove('hidden') : sb.classList.add('hidden');
     }
 
     async function selectChat(name) {
         target = name;
         document.getElementById('targetName').innerText = target;
-        toggleSidebar(false);
+        setSidebar(false);
         const res = await fetch(`/messages/${me}/${target}`);
         const msgs = await res.json();
         document.getElementById('msg-container').innerHTML = '';
-        msgs.forEach(appendMsg);
+        msgs.forEach(display);
     }
 
-    function appendMsg(msg) {
+    function display(msg) {
         if((msg.from === me && msg.to === target) || (msg.from === target && msg.to === me)) {
             const container = document.getElementById('msg-container');
             const div = document.createElement('div');
@@ -190,15 +203,14 @@
     }
 
     function send() {
-        const val = document.getElementById('msgIn').value;
-        if(!val || !target) return;
-        socket.emit('sendMessage', { from: me, to: target, text: val });
-        document.getElementById('msgIn').value = "";
+        const el = document.getElementById('msgIn');
+        if(!el.value || !target) return;
+        socket.emit('sendMessage', { from: me, to: target, text: el.value });
+        el.value = "";
     }
 
-    socket.on('receiveMessage', appendMsg);
-    socket.on('onlineStatusUpdate', users => { onlineUsers = users; refreshData(); });
-
+    socket.on('receiveMessage', display);
+    socket.on('onlineUpdate', users => { onlineUsers = users; updateUI(); });
 </script>
 </body>
 </html>
