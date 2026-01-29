@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MyDantec</title>
+    
     <link rel="icon" type="image/png" href="logo.png">
-    <script src="/socket.io/socket.io.js"></script>
+    <link rel="apple-touch-icon" href="logo.png"> <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
             --brand: #00aff0; --bg: #ffffff; --text: #1a1a1b; --sidebar-bg: #f8f9fa;
@@ -18,10 +19,10 @@
         
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
 
-        /* AUTH SCREEN */
+        /* PAGE DE CONNEXION ÉPURÉE */
         #auth-screen { 
             position: fixed; inset: 0; 
-            background: #0f172a; /* Fond sombre moderne */
+            background: #0f172a; 
             z-index: 2000; display: flex; justify-content: center; align-items: center; 
         }
         .auth-box { 
@@ -29,33 +30,19 @@
             width: 90%; max-width: 400px; text-align: center; color: white;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
-        .logo-main { width: 100px; height: 100px; object-fit: contain; margin-bottom: 20px; border-radius: 20px; }
 
-        /* LAYOUT */
+        /* NAVIGATION */
         #app { display: none; height: 100dvh; width: 100%; flex-direction: row; }
-        
-        .sidebar { 
-            width: 350px; height: 100%; background: var(--sidebar-bg); 
-            border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; 
-            transition: 0.3s; z-index: 100;
-        }
-
+        .sidebar { width: 350px; height: 100%; background: var(--sidebar-bg); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
         .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; }
 
-        /* MOBILE NAVIGATION */
         @media (max-width: 768px) {
             .sidebar { position: absolute; width: 100%; left: 0; }
             .sidebar.hidden { transform: translateX(-100%); }
             .chat-area { position: absolute; width: 100%; left: 0; }
         }
 
-        .header { 
-            padding: 10px 20px; height: 60px; display: flex; align-items: center; 
-            justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.05); 
-            background: var(--bg); box-sizing: border-box;
-        }
-
-        .logo-small { width: 35px; height: 35px; object-fit: contain; border-radius: 8px; margin-right: 10px; }
+        .header { padding: 10px 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.05); background: var(--bg); box-sizing: border-box; }
 
         /* BOUTON RETOUR MOBILE */
         .back-button {
@@ -65,7 +52,7 @@
         }
         @media (max-width: 768px) { .back-button { display: block; } }
 
-        /* MESSAGES */
+        /* MESSAGES & INPUTS */
         #msg-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         .bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 15px; }
         .me { align-self: flex-end; background: var(--brand); color: white; border-bottom-right-radius: 4px; }
@@ -75,10 +62,7 @@
         .input-bar { flex: 1; background: var(--input-bg); border-radius: 25px; padding: 5px 20px; }
         #msgIn { width: 100%; border: none; background: transparent; padding: 10px 0; outline: none; color: var(--text); font-size: 16px; }
 
-        .auth-input { 
-            width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; 
-            border: none; background: #334155; color: white; outline: none; box-sizing: border-box;
-        }
+        .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #334155; color: white; outline: none; box-sizing: border-box; }
         .btn-blue { background: var(--brand); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
     </style>
 </head>
@@ -86,8 +70,7 @@
 
 <div id="auth-screen">
     <div class="auth-box">
-        <img src="logo.png" class="logo-main" onerror="this.src='https://via.placeholder.com/100?text=M'">
-        <h2 style="margin-top:0">MyDantec</h2>
+        <h2 style="margin-top:0; color: var(--brand);">MyDantec</h2>
         <input type="text" id="userIn" class="auth-input" placeholder="Pseudo">
         <input type="password" id="passIn" class="auth-input" placeholder="Mot de passe">
         <button class="btn-blue" onclick="auth('login')">Se connecter</button>
@@ -98,22 +81,16 @@
 <div id="app">
     <div class="sidebar" id="sidebar">
         <div class="header">
-            <div style="display:flex; align-items:center">
-                <img src="logo.png" class="logo-small" onerror="this.style.display='none'">
-                <b style="font-size: 18px;">MyDantec</b>
-            </div>
+            <b style="font-size: 18px;">MyDantec</b>
             <span style="cursor:pointer" onclick="toggleTheme()">🌓</span>
         </div>
-        
         <div style="padding: 15px;">
             <div style="background:var(--input-bg); border-radius:10px; display:flex; padding:5px 10px;">
                 <input type="text" id="friendIn" placeholder="Ajouter un ami..." style="flex:1; border:none; background:transparent; outline:none; padding:8px; color:var(--text)">
                 <button onclick="sendRequest()" style="background:var(--brand); border:none; color:white; border-radius:8px; width:30px; cursor:pointer">+</button>
             </div>
         </div>
-
         <div id="request-area"></div>
-        <div style="padding: 10px 20px; font-size: 12px; font-weight: bold; color: #94a3b8;">DISCUSSIONS</div>
         <div id="friend-list" style="flex:1; overflow-y:auto;"></div>
     </div>
 
@@ -124,9 +101,7 @@
                 <b id="targetName">Chat</b>
             </div>
         </div>
-        
         <div id="msg-container"></div>
-
         <div class="footer">
             <div class="input-bar">
                 <input type="text" id="msgIn" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter') send()">
@@ -137,6 +112,7 @@
 </div>
 
 <script>
+    /* Le script reste le même pour faire fonctionner la messagerie */
     const socket = io();
     let me = "", target = "", onlineUsers = [];
 
@@ -173,7 +149,6 @@
     async function updateUI() {
         const res = await fetch(`/user-data/${me}`);
         const data = await res.json();
-        
         document.getElementById('friend-list').innerHTML = data.friends.map(f => `
             <div style="padding:15px 20px; display:flex; align-items:center; cursor:pointer; border-bottom:1px solid rgba(0,0,0,0.02)" onclick="selectChat('${f}')">
                 <div style="width:10px; height:10px; border-radius:50%; margin-right:12px; background:${onlineUsers.includes(f) ? '#10b981' : '#cbd5e1'}"></div>
